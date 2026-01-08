@@ -46,20 +46,30 @@ A powerful Rust-based CLI for seamless integration between Azure DevOps, 7Pace T
 
 **From Source:**
 ```bash
-git clone https://github.com/yourusername/devops-cli.git
-cd devops-cli
+git clone https://github.com/yourusername/ao-no-out7ook.git
+cd ao-no-out7ook
 cargo build --release
-./target/release/task --version
+# Binary is at ./target/release/ao-no-out7ook
 ```
 
-**From Crates.io (when published):**
+**Recommended Alias:**
+The documentation uses `task` as a shorthand. Set up this alias for easier usage:
 ```bash
-cargo install devops-cli
+# Add to your .bashrc or .zshrc
+alias task='/path/to/ao-no-out7ook/target/release/ao-no-out7ook'
 ```
 
-### **First-Time Setup**
+---
 
-1. **Configure Azure DevOps:**
+## **Basic Usage**
+
+### **Self-Documentation (For AI Agents)**
+```bash
+# Get embedded workflows and SOPs
+task doc story-breakdown
+```
+
+### **Start Working on a Task**
 ```bash
 task config set devops.organization "myorg"
 task config set devops.project "MyProject"
@@ -219,12 +229,12 @@ cargo doc --open
 
 - [x] **Phase 1:** Core CLI & DevOps integration
 - [x] **Phase 2:** 7Pace timer integration
-- [ ] **Phase 3:** Outlook calendar & smart scheduling
-- [ ] **Phase 4:** Markdown import/export
-- [ ] **Phase 5:** GUI frontends (VS Code plugin, Tauri app)
+- [x] **Phase 3:** Outlook calendar & smart scheduling
+- [x] **Phase 4:** Markdown import/export (Human Editable Layer)
+- [ ] **Phase 5:** AI agent integration (Self-docs, Decomposition)
 - [ ] **Phase 6:** Security hardening & distribution
 - [ ] **Phase 7:** Automation & scheduled workflows
-- [ ] **Phase 8:** AI agent integration
+- [ ] **Phase 8:** Optional frontends (GUI)
 
 See [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) for details.
 
