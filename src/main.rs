@@ -137,6 +137,15 @@ enum Commands {
 
     /// Calendar operations
     Calendar(CalendarArgs),
+
+    /// Documentation and AI Workflows
+    ///
+    /// Outputs built-in guides and standard operating procedures (SOPs) for AI agents.
+    /// Use this to learn how to combine commands for complex workflows.
+    Doc {
+        #[arg(help = "Topic to read (e.g., 'story-breakdown', 'list')")]
+        topic: Option<String>,
+    },
 }
 
 #[derive(Args)]
@@ -326,6 +335,20 @@ fn main() -> Result<()> {
                     &config,
                     event_id.clone(),
                 ))?;
+            }
+        },
+        Commands::Doc { topic } => match topic.as_deref() {
+            Some("story-breakdown") => {
+                println!("{}", include_str!("../.agent/workflows/breakdown_story.md"));
+            }
+            Some("list") => {
+                println!("Available documentation topics:");
+                println!("- story-breakdown: SOP for decomposing User Stories into Tasks");
+            }
+            _ => {
+                println!("Available documentation topics:");
+                println!("- story-breakdown: SOP for decomposing User Stories into Tasks");
+                println!("\nUsage: task doc <TOPIC>");
             }
         },
     }

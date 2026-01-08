@@ -260,6 +260,23 @@ task calendar delete "event-id-123"
 
 ---
 
+### **AI Integration & Documentation**
+
+#### `task doc [TOPIC]`
+
+Output built-in manuals and workflows. This allows AI agents to "read the manual" directly from the binary.
+
+**Arguments:**
+- `[TOPIC]` - Topic to display (e.g. `story-breakdown`). If omitted, lists available topics.
+
+**Examples:**
+```bash
+task doc
+task doc story-breakdown
+```
+
+---
+
 ### **Configuration**
 
 #### `task config <ACTION>`

@@ -111,7 +111,7 @@
 
 1. **FR5.1 (Context Export):** `task context --format llm` command to dump current task, parent, and siblings in token-optimized format for AI reasoning.
 2. **FR5.2 (Decomposition):** Support bulk child-item creation JSON input to allow Agents to "explode" a story into tasks in one operation.
-3. **FR5.3 (Schema Reflection):** CLI can output its own schema/capabilities so an Agent knows *how* to interact with it dynamically.
+3. **FR5.3 (Self-Documentation):** CLI exposes its own manuals and SOPs via `task doc` (e.g., `task doc story-breakdown`), allowing agents to "read the manual" without source access. Includes schema reflection.
 4. **FR5.4 (Safe-Mode Diffs):** "Dry-run" outputs a precise diff of what *would* change in DevOps, allowing the Agent to ask "User, do you approve these 5 new sub-tasks?" before committing.
 
 **Outcome:** The CLI becomes a tool *for* AI, enabling autonomous task management and breakdown.
