@@ -2,17 +2,17 @@
 description: How to decompose a User Story into granular Tasks using the CLI
 ---
 
-1. **Workspace Analysis & Context Gathering**
-   Before planning, understand the codebase and requirements.
-   *   **Analyze:** Explore the directory structure and recent changes to understand the architectural patterns.
-   *   **Prompt User:** "Please provide relevant files or path to the design doc for this story."
-   *   **Read:** Read the provided files to ensure the technical approach aligns with the existing codebase.
-
-2. **Read the Story Context**
+1. **Read the Story Context**
    Fetch the details of the parent User Story to understand requirements.
    ```bash
    ano7 show <STORY_ID>
    ```
+
+2. **Workspace Analysis & Context Gathering**
+   Now that you understand the requirements, identify the relevant code.
+   *   **Analyze:** Explore the directory structure to find components/files related to the story.
+   *   **Prompt User:** "I've read the story. Please provide any specific files or design docs if available."
+   *   **Read:** Read the gathered files to ensure the implementation plan is technically sound.
 
 3. **Plan the Tasks (Generate Markdown)**
    Create a markdown file (e.g., `plan.md`) defining the child tasks. 
