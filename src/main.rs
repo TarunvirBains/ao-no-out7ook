@@ -77,6 +77,24 @@ enum Commands {
         #[arg(long, help = "Preview changes without applying")]
         dry_run: bool,
     },
+
+    /// Manually log time to a work item
+    LogTime {
+        #[arg(help = "Work Item ID")]
+        id: u32,
+        #[arg(long, help = "Hours to log (decimal, e.g. 1.5)")]
+        hours: f32,
+        #[arg(long, help = "Optional comment")]
+        comment: Option<String>,
+        #[arg(long, help = "Preview without logging")]
+        dry_run: bool,
+    },
+
+    /// Show recent worklogs
+    Worklogs {
+        #[arg(long, default_value = "7", help = "Number of days to show")]
+        days: u32,
+    },
 }
 
 #[derive(Parser)]
@@ -144,6 +162,17 @@ fn main() -> Result<()> {
         }
         Commands::Import { file, dry_run } => {
             commands::devops::import(&config, file.clone(), *dry_run)?;
+        }
+        Commands::LogTime {
+            id,
+            hours,
+            comment,
+            dry_run,
+        } => {
+            commands::pace::log_time(&config, *id, *hours, comment.clone(), *dry_run)?;
+        }
+        Commands::Worklogs { days } => {
+            commands::pace::worklogs(&config, *days)?;
         }
     }
 
