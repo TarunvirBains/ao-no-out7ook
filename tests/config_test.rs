@@ -27,16 +27,19 @@ fn test_load_config_valid() {
 #[test]
 fn test_load_config_defaults() {
     let mut temp_file = NamedTempFile::new().unwrap();
-    // Empty config should error or verify defaults if we decide to have them
-    // For now, let's verify minimum required fields or result
+    // Empty config should load with defaults
     let config_content = "";
     temp_file.write_all(config_content.as_bytes()).unwrap();
 
-    // This depends on whether we panic or error on missing fields
-    // Assuming we use serde/config defaults or Option types, testing error case here:
-    let result = load_from_path(temp_file.path());
-    assert!(
-        result.is_err(),
-        "Should fail on empty config if fields are required"
-    );
+    let config = load_from_path(temp_file.path()).expect("Should load with defaults");
+
+    // Verify default values are applied
+    assert_eq!(config.devops.organization, "");
+    assert_eq!(config.devops.project, "");
+    // WorkHoursConfig Default has these values (see config.rs:45-51)
+    assert_eq!(config.work_hours.start, "");
+    assert_eq!(config.work_hours.end, "");
+    assert_eq!(config.work_hours.timezone, "");
+    assert_eq!(config.graph.tenant_id, "common");
+    assert_eq!(config.focus_blocks.duration_minutes, 45);
 }

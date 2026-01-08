@@ -29,20 +29,21 @@ pub fn start(config: &Config, id: u32, dry_run: bool, schedule_focus: bool) -> R
 
     // 2. Check for conflicting timer (FR2.3)
     if let Some(current_timer) = pace_client.get_current_timer()?
-        && current_timer.work_item_id != id {
-            if dry_run {
-                println!(
-                    "[DRY-RUN] Would stop existing timer for Task {}",
-                    current_timer.work_item_id
-                );
-            } else {
-                println!(
-                    "Stopping existing timer for Task {}...",
-                    current_timer.work_item_id
-                );
-                pace_client.stop_timer(0)?;
-            }
+        && current_timer.work_item_id != id
+    {
+        if dry_run {
+            println!(
+                "[DRY-RUN] Would stop existing timer for Task {}",
+                current_timer.work_item_id
+            );
+        } else {
+            println!(
+                "Stopping existing timer for Task {}...",
+                current_timer.work_item_id
+            );
+            pace_client.stop_timer(0)?;
         }
+    }
 
     // 3. Start new timer
     let timer_id = if dry_run {

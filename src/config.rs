@@ -3,8 +3,7 @@ use config::{Config as ConfigBuilder, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
-#[derive(Default)]
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct Config {
     #[serde(default)]
     pub devops: DevOpsConfig,
@@ -101,4 +100,3 @@ pub fn load() -> Result<Config> {
 
     load_from_path(config_path)
 }
-
