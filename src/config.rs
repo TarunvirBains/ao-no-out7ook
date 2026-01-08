@@ -1,11 +1,15 @@
 use anyhow::{Context, Result};
-use config::{Config as ConfigLoader, File, FileFormat};
+use config::{Config as ConfigBuilder, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Config {
+    #[serde(default)]
     pub devops: DevOpsConfig,
+    #[serde(default)]
+    pub graph: GraphConfig,
+    #[serde(default)]
     pub work_hours: WorkHoursConfig,
     #[serde(default)]
     pub focus_blocks: FocusBlocksConfig,
@@ -18,6 +22,26 @@ pub struct DevOpsConfig {
     pub organization: String,
     pub project: String,
     pub pat: Option<String>, // Can be optional if loading from env/keyring
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct GraphConfig {
+    pub client_id: String,
+    #[serde(default = "default_tenant_id")]
+    pub tenant_id: String,
+}
+
+fn default_tenant_id() -> String {
+    "common".to_string()
+}
+
+impl Default for GraphConfig {
+    fn default() -> Self {
+        Self {
+            client_id: String::new(),
+            tenant_id: "common".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
@@ -58,7 +82,7 @@ impl Default for StateConfig {
 }
 
 pub fn load_from_path<P: AsRef<Path>>(path: P) -> Result<Config> {
-    let loader = ConfigLoader::builder()
+    let loader = ConfigBuilder::builder()
         .add_source(File::from(path.as_ref()).format(FileFormat::Toml))
         .build()
         .context("Failed to build config loader")?;
