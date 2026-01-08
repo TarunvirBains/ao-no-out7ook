@@ -171,9 +171,20 @@ struct ConfigArgs {
 
 #[derive(Subcommand)]
 enum ConfigAction {
+    /// List all configuration values
     List,
-    Set { key: String, value: String },
-    Get { key: String },
+    /// Set a configuration value
+    Set {
+        #[arg(help = "Config key (e.g. devops.pat, devops.organization, devops.skip_states)")]
+        key: String,
+        #[arg(help = "Value to set")]
+        value: String,
+    },
+    /// Get a specific configuration value
+    Get {
+        #[arg(help = "Config key")]
+        key: String,
+    },
 }
 
 fn main() -> Result<()> {
