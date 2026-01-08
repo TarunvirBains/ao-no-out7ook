@@ -2,7 +2,7 @@ use anyhow::Result;
 use ao_no_out7ook::commands;
 use ao_no_out7ook::config;
 use ao_no_out7ook::state::State;
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
 #[command(name = "task")]
@@ -95,6 +95,59 @@ enum Commands {
         #[arg(long, default_value = "7", help = "Number of days to show")]
         days: u32,
     },
+
+    /// OAuth authentication for Microsoft Graph
+    Oauth(OauthArgs),
+
+    /// Calendar operations
+    Calendar(CalendarArgs),
+}
+
+#[derive(Args)]
+struct OauthArgs {
+    #[command(subcommand)]
+    action: OauthAction,
+}
+
+#[derive(Subcommand)]
+enum OauthAction {
+    /// Authenticate with Microsoft Graph (device code flow)
+    Login,
+    /// Show current authentication status
+    Status,
+}
+
+#[derive(Args)]
+struct CalendarArgs {
+    #[command(subcommand)]
+    action: CalendarAction,
+}
+
+#[derive(Subcommand)]
+enum CalendarAction {
+    /// List calendar events
+    List {
+        #[arg(long, default_value = "7", help = "Number of days to show")]
+        days: u32,
+        #[arg(long, help = "Filter by work item ID")]
+        work_item: Option<u32>,
+    },
+    /// Schedule Focus Block for work item
+    Schedule {
+        #[arg(help = "Work Item ID")]
+        id: u32,
+        #[arg(long, help = "Start time (ISO 8601, e.g., 2026-01-08T14:00:00)")]
+        start: Option<String>,
+        #[arg(long, default_value = "45", help = "Duration in minutes")]
+        duration: u32,
+        #[arg(long, help = "Custom title (defaults to work item title)")]
+        title: Option<String>,
+    },
+    /// Delete calendar event
+    Delete {
+        #[arg(help = "Event ID")]
+        event_id: String,
+    },
 }
 
 #[derive(Parser)]
@@ -174,6 +227,43 @@ fn main() -> Result<()> {
         Commands::Worklogs { days } => {
             commands::pace::worklogs(&config, *days)?;
         }
+        Commands::Oauth(oauth_args) => match &oauth_args.action {
+            OauthAction::Login => {
+                tokio::runtime::Runtime::new()?
+                    .block_on(commands::calendar::oauth_login(&config))?;
+            }
+            OauthAction::Status => {
+                tokio::runtime::Runtime::new()?
+                    .block_on(commands::calendar::oauth_status(&config))?;
+            }
+        },
+        Commands::Calendar(calendar_args) => match &calendar_args.action {
+            CalendarAction::List { days, work_item } => {
+                tokio::runtime::Runtime::new()?.block_on(commands::calendar::calendar_list(
+                    &config, *days, *work_item,
+                ))?;
+            }
+            CalendarAction::Schedule {
+                id,
+                start,
+                duration,
+                title,
+            } => {
+                tokio::runtime::Runtime::new()?.block_on(commands::calendar::calendar_schedule(
+                    &config,
+                    *id,
+                    start.clone(),
+                    *duration,
+                    title.clone(),
+                ))?;
+            }
+            CalendarAction::Delete { event_id } => {
+                tokio::runtime::Runtime::new()?.block_on(commands::calendar::calendar_delete(
+                    &config,
+                    event_id.clone(),
+                ))?;
+            }
+        },
     }
 
     Ok(())

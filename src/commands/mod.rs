@@ -1,3 +1,4 @@
+pub mod calendar;
 pub mod config;
 pub mod devops;
 pub mod pace;
