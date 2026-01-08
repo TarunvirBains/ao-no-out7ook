@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::state::{with_state_lock, State};
+use crate::state::with_state_lock;
 use anyhow::{Context, Result};
 use std::io::{self, Write};
 use std::path::PathBuf;
@@ -29,11 +29,11 @@ pub fn checkin(config: &Config) -> Result<()> {
     println!("\n🎯 Focus Block Status Check");
     println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     println!("Task: #{} - {}", task_info.id, task_info.title);
-    
+
     let elapsed = chrono::Utc::now().signed_duration_since(task_info.started_at);
     let mins = elapsed.num_minutes();
     println!("Timer running: {} minutes", mins);
-    
+
     println!();
     println!("What would you like to do?");
     println!("  [1] Continue working (schedule another Focus Block)");
@@ -53,10 +53,10 @@ pub fn checkin(config: &Config) -> Result<()> {
     match choice {
         "1" => {
             println!("\n✓ Continuing work on Task {}...", task_info.id);
-            
+
             // Schedule another Focus Block
             println!("📅 Scheduling next Focus Block...");
-            
+
             let runtime = tokio::runtime::Runtime::new()?;
             let result = runtime.block_on(async {
                 let token_cache_path = home::home_dir()
@@ -99,8 +99,7 @@ pub fn checkin(config: &Config) -> Result<()> {
                 Ok(created) => {
                     println!(
                         "✓ Next Focus Block: {} to {}",
-                        created.start.date_time,
-                        created.end.date_time
+                        created.start.date_time, created.end.date_time
                     );
                 }
                 Err(e) => {
@@ -110,38 +109,38 @@ pub fn checkin(config: &Config) -> Result<()> {
         }
         "2" => {
             println!("\n⚠ Marking task as blocked...");
-            
+
             // Stop timer
-            let pat = config.devops.pat.as_deref()
-                .context("DevOps PAT not set")?;
-            let pace_client = crate::pace::client::PaceClient::new(pat, &config.devops.organization);
-            
+            let pat = config.devops.pat.as_deref().context("DevOps PAT not set")?;
+            let pace_client =
+                crate::pace::client::PaceClient::new(pat, &config.devops.organization);
+
             match pace_client.stop_timer(0) {
                 Ok(_) => println!("✓ Timer stopped"),
                 Err(e) => println!("⚠ Could not stop timer: {}", e),
             }
-            
+
             println!("💡 Tip: Update task state with: task state <NEW_STATE>");
         }
         "3" => {
             println!("\n✓ Completing Task {}...", task_info.id);
-            
+
             // Stop timer
-            let pat = config.devops.pat.as_deref()
-                .context("DevOps PAT not set")?;
-            let pace_client = crate::pace::client::PaceClient::new(pat, &config.devops.organization);
-            
+            let pat = config.devops.pat.as_deref().context("DevOps PAT not set")?;
+            let pace_client =
+                crate::pace::client::PaceClient::new(pat, &config.devops.organization);
+
             match pace_client.stop_timer(0) {
                 Ok(_) => println!("✓ Timer stopped"),
                 Err(e) => println!("⚠ Could not stop timer: {}", e),
             }
-            
+
             // Clear current task from state
             with_state_lock(&lock_path, &state_path, |state| {
                 state.current_task = None;
                 state.save(&state_path)
             })?;
-            
+
             println!("✓ Task cleared from state");
             println!("💡 Start next task with: task start <ID>");
         }

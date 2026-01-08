@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Default)]
 pub struct Config {
     #[serde(default)]
     pub devops: DevOpsConfig,
@@ -101,14 +102,3 @@ pub fn load() -> Result<Config> {
     load_from_path(config_path)
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            devops: DevOpsConfig::default(),
-            graph: GraphConfig::default(),
-            work_hours: WorkHoursConfig::default(),
-            focus_blocks: FocusBlocksConfig::default(),
-            state: StateConfig::default(),
-        }
-    }
-}

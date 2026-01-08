@@ -41,7 +41,7 @@ pub async fn oauth_status(config: &Config) -> Result<()> {
     }
 
     let auth = GraphAuthenticator::new(config.graph.client_id.clone(), token_cache_path.clone());
-    
+
     match auth.get_access_token().await {
         Ok(_) => {
             println!("✓ Authenticated with Microsoft Graph");
@@ -77,31 +77,32 @@ pub async fn calendar_list(config: &Config, days: u32, work_item: Option<u32>) -
     }
 
     println!("Calendar Events (next {} days):", days);
-    println!("{:<8} {:<50} {:<20} {:<12}", "Event ID", "Subject", "Start", "Duration");
+    println!(
+        "{:<8} {:<50} {:<20} {:<12}",
+        "Event ID", "Subject", "Start", "Duration"
+    );
     println!("{}", "-".repeat(92));
 
     for event in &events {
         let event_id = event.id.as_deref().unwrap_or("N/A");
         let subject = &event.subject;
-        
+
         // Skip if filtering by work_item and this event doesn't match
         if let Some(filter_id) = work_item {
             // Check if event has work_item_id in extended properties
             let has_match = event
                 .extended_properties
                 .as_ref()
-                .and_then(|props| {
-                    props.iter().find(|p| p.value == filter_id.to_string())
-                })
+                .and_then(|props| props.iter().find(|p| p.value == filter_id.to_string()))
                 .is_some();
-            
+
             if !has_match {
                 continue;
             }
         }
-        
+
         let start_time = &event.start.date_time;
-        
+
         // Calculate duration (simplified)
         let duration = "N/A"; // TODO: parse start/end times
 
@@ -163,9 +164,8 @@ pub async fn calendar_schedule(
 
     let end = start + Duration::minutes(duration_mins as i64);
 
-    let subject = custom_title.unwrap_or_else(|| {
-        format!("🎯 Focus: {} - {}", work_item_id, work_item_title)
-    });
+    let subject =
+        custom_title.unwrap_or_else(|| format!("🎯 Focus: {} - {}", work_item_id, work_item_title));
 
     let event = CalendarEvent {
         id: None,
@@ -178,7 +178,7 @@ pub async fn calendar_schedule(
     };
 
     let created = client.create_event(event).await?;
-    
+
     println!("✓ Focus Block scheduled");
     println!("  Event ID: {}", created.id.as_deref().unwrap_or("N/A"));
     println!("  Subject: {}", created.subject);

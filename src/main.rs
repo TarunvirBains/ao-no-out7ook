@@ -1,7 +1,6 @@
 use anyhow::Result;
 use ao_no_out7ook::commands;
 use ao_no_out7ook::config;
-use ao_no_out7ook::state::State;
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]

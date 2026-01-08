@@ -116,15 +116,14 @@ pub fn show(config: &Config, id: u32) -> Result<()> {
         }
     }
 
-    if let Some(relations) = &item.relations {
-        if !relations.is_empty() {
+    if let Some(relations) = &item.relations
+        && !relations.is_empty() {
             println!("\nRelations:");
             for rel in relations {
-                let target_id = rel.url.split('/').last().unwrap_or("?");
+                let target_id = rel.url.split('/').next_back().unwrap_or("?");
                 println!("  - {}: #{}", rel.rel, target_id);
             }
         }
-    }
 
     println!("\nDescription:");
     if let Some(desc) = item

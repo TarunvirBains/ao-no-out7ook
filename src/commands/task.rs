@@ -1,6 +1,6 @@
 use crate::config::Config;
 use crate::devops::client::DevOpsClient;
-use crate::state::{with_state_lock, CurrentTask, State};
+use crate::state::{CurrentTask, State, with_state_lock};
 use anyhow::{Context, Result};
 use chrono::Utc;
 use std::path::PathBuf;
@@ -28,8 +28,8 @@ pub fn start(config: &Config, id: u32, dry_run: bool, schedule_focus: bool) -> R
     let title = work_item.get_title().unwrap_or("Unknown Title").to_string();
 
     // 2. Check for conflicting timer (FR2.3)
-    if let Some(current_timer) = pace_client.get_current_timer()? {
-        if current_timer.work_item_id != id {
+    if let Some(current_timer) = pace_client.get_current_timer()?
+        && current_timer.work_item_id != id {
             if dry_run {
                 println!(
                     "[DRY-RUN] Would stop existing timer for Task {}",
@@ -43,7 +43,6 @@ pub fn start(config: &Config, id: u32, dry_run: bool, schedule_focus: bool) -> R
                 pace_client.stop_timer(0)?;
             }
         }
-    }
 
     // 3. Start new timer
     let timer_id = if dry_run {
@@ -62,7 +61,7 @@ pub fn start(config: &Config, id: u32, dry_run: bool, schedule_focus: bool) -> R
             println!("[DRY-RUN] Would schedule Focus Block in calendar");
         } else {
             println!("📅 Scheduling Focus Block...");
-            
+
             // Use async runtime for calendar operations
             let runtime = tokio::runtime::Runtime::new()?;
             let result = runtime.block_on(async {
@@ -109,8 +108,7 @@ pub fn start(config: &Config, id: u32, dry_run: bool, schedule_focus: bool) -> R
                 Ok(created) => {
                     println!(
                         "✓ Focus Block created: {} to {}",
-                        created.start.date_time,
-                        created.end.date_time
+                        created.start.date_time, created.end.date_time
                     );
                 }
                 Err(e) => {
@@ -165,7 +163,7 @@ pub fn stop(dry_run: bool) -> Result<()> {
 }
 
 pub fn current() -> Result<()> {
-    let (lock_path, state_path) = state_paths()?;
+    let (_lock_path, state_path) = state_paths()?;
 
     // Read-only access doesn't strictly need exclusive lock if we accept potentially stale data
     // But for consistency and simplicity in MVP, we can just load without lock or use shared lock if supported

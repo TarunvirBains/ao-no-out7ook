@@ -1,12 +1,12 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Duration, Utc};
 use oauth2::{
-    basic::BasicClient, devicecode::StandardDeviceAuthorizationResponse, AuthUrl, ClientId,
-    DeviceAuthorizationUrl, Scope, TokenResponse, TokenUrl,
+    AuthUrl, ClientId, DeviceAuthorizationUrl, Scope, TokenResponse, TokenUrl, basic::BasicClient,
+    devicecode::StandardDeviceAuthorizationResponse,
 };
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use tokio::time::{sleep, Duration as TokioDuration};
+use tokio::time::Duration as TokioDuration;
 
 const MICROSOFT_AUTH_URL: &str = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
 const MICROSOFT_TOKEN_URL: &str = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
@@ -76,7 +76,12 @@ impl GraphAuthenticator {
             access_token: token.access_token().secret().clone(),
             refresh_token: token.refresh_token().map(|t| t.secret().clone()),
             expires_at: Utc::now()
-                + Duration::seconds(token.expires_in().map(|d| d.as_secs() as i64).unwrap_or(3600)),
+                + Duration::seconds(
+                    token
+                        .expires_in()
+                        .map(|d| d.as_secs() as i64)
+                        .unwrap_or(3600),
+                ),
         };
 
         self.save_token_cache(&cache)?;
@@ -124,7 +129,12 @@ impl GraphAuthenticator {
                 .map(|t| t.secret().clone())
                 .or_else(|| Some(refresh_token.to_string())),
             expires_at: Utc::now()
-                + Duration::seconds(token.expires_in().map(|d| d.as_secs() as i64).unwrap_or(3600)),
+                + Duration::seconds(
+                    token
+                        .expires_in()
+                        .map(|d| d.as_secs() as i64)
+                        .unwrap_or(3600),
+                ),
         };
 
         self.save_token_cache(&cache)?;

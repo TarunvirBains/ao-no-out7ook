@@ -173,7 +173,9 @@ impl DevOpsClient {
                 anyhow::bail!(
                     "Conflict detected: Work item {} has been modified (expected rev {}, current rev {}). \
                      Fetch latest and retry.",
-                    id, expected, current.rev
+                    id,
+                    expected,
+                    current.rev
                 );
             }
         }

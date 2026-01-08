@@ -1,5 +1,4 @@
 /// Duration computation from multiple sources (FR2.4)
-
 pub enum DurationSource {
     Timer { duration_secs: u32 },
     Manual { duration_secs: u32 },

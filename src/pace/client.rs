@@ -9,6 +9,7 @@ use reqwest::blocking::Client;
 pub struct PaceClient {
     client: Client,
     base_url: String,
+    #[allow(dead_code)] // May be used in future API calls
     organization: String,
     pat: String,
 }

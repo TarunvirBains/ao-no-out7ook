@@ -2,9 +2,8 @@ use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use fs2::FileExt;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs::{self, OpenOptions};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct State {
@@ -94,6 +93,7 @@ where
         .read(true)
         .write(true)
         .create(true)
+        .truncate(true)
         .open(lock_path)
         .context("Failed to open lock file")?;
 

@@ -1,6 +1,7 @@
 use crate::config::WorkHoursConfig;
 use crate::graph::models::{CalendarEvent, DateTimeTimeZone};
 use anyhow::{Context, Result};
+#[allow(unused_imports)] // Datelike used in tests
 use chrono::{DateTime, Datelike, Duration, NaiveTime, TimeZone, Timelike, Utc};
 
 /// Round to next 15-minute interval (:00, :15, :30, :45)
@@ -24,13 +25,6 @@ pub fn round_to_next_interval(time: DateTime<Utc>) -> DateTime<Utc> {
             .with_nanosecond(0)
             .unwrap()
             + Duration::hours(1)
-    } else if minute <= next_interval {
-        time.with_minute(next_interval)
-            .unwrap()
-            .with_second(0)
-            .unwrap()
-            .with_nanosecond(0)
-            .unwrap()
     } else {
         time.with_minute(next_interval)
             .unwrap()

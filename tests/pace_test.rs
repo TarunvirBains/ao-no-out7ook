@@ -1,13 +1,13 @@
 use ao_no_out7ook::pace::client::PaceClient;
-use ao_no_out7ook::pace::models::{Timer, StopTimerResponse, Worklog};
+use ao_no_out7ook::pace::models::{StopTimerResponse, Timer, Worklog};
 use chrono::Utc;
+use wiremock::matchers::{header, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
-use wiremock::matchers::{method, path, header};
 
 #[tokio::test]
 async fn test_start_timer_success() {
     let mock_server = MockServer::start().await;
-    
+
     Mock::given(method("POST"))
         .and(path("/_apis/api/tracking/client/startTracking"))
         .and(header("Authorization", "Basic OlRFU1RfUEFU"))
@@ -19,14 +19,16 @@ async fn test_start_timer_success() {
         })))
         .mount(&mock_server)
         .await;
-    
+
     let uri = mock_server.uri();
     let timer = tokio::task::spawn_blocking(move || {
-        let client = PaceClient::new("TEST_PAT", "test-org")
-            .with_base_url(&uri);
+        let client = PaceClient::new("TEST_PAT", "test-org").with_base_url(&uri);
         client.start_timer(456, Some("Working on feature".to_string()))
-    }).await.unwrap().unwrap();
-    
+    })
+    .await
+    .unwrap()
+    .unwrap();
+
     assert_eq!(timer.id, "timer-abc-123");
     assert_eq!(timer.work_item_id, 456);
     assert_eq!(timer.comment, Some("Working on feature".to_string()));
@@ -35,7 +37,7 @@ async fn test_start_timer_success() {
 #[tokio::test]
 async fn test_stop_timer_success() {
     let mock_server = MockServer::start().await;
-    
+
     Mock::given(method("POST"))
         .and(path("/_apis/api/tracking/client/stopTracking/0"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
@@ -45,14 +47,16 @@ async fn test_stop_timer_success() {
         })))
         .mount(&mock_server)
         .await;
-    
+
     let uri = mock_server.uri();
     let response = tokio::task::spawn_blocking(move || {
-        let client = PaceClient::new("TEST_PAT", "test-org")
-            .with_base_url(&uri);
+        let client = PaceClient::new("TEST_PAT", "test-org").with_base_url(&uri);
         client.stop_timer(0)
-    }).await.unwrap().unwrap();
-    
+    })
+    .await
+    .unwrap()
+    .unwrap();
+
     assert_eq!(response.worklog_id, 789);
     assert_eq!(response.duration, 3600);
     assert_eq!(response.work_item_id, 456);
@@ -61,7 +65,7 @@ async fn test_stop_timer_success() {
 #[tokio::test]
 async fn test_get_current_timer_active() {
     let mock_server = MockServer::start().await;
-    
+
     Mock::given(method("GET"))
         .and(path("/_apis/api/tracking/client/current"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
@@ -72,14 +76,16 @@ async fn test_get_current_timer_active() {
         })))
         .mount(&mock_server)
         .await;
-    
+
     let uri = mock_server.uri();
     let timer = tokio::task::spawn_blocking(move || {
-        let client = PaceClient::new("TEST_PAT", "test-org")
-            .with_base_url(&uri);
+        let client = PaceClient::new("TEST_PAT", "test-org").with_base_url(&uri);
         client.get_current_timer()
-    }).await.unwrap().unwrap();
-    
+    })
+    .await
+    .unwrap()
+    .unwrap();
+
     assert!(timer.is_some());
     let timer = timer.unwrap();
     assert_eq!(timer.id, "timer-current");
@@ -89,27 +95,29 @@ async fn test_get_current_timer_active() {
 #[tokio::test]
 async fn test_get_current_timer_none() {
     let mock_server = MockServer::start().await;
-    
+
     Mock::given(method("GET"))
         .and(path("/_apis/api/tracking/client/current"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!(null)))
         .mount(&mock_server)
         .await;
-    
+
     let uri = mock_server.uri();
     let timer = tokio::task::spawn_blocking(move || {
-        let client = PaceClient::new("TEST_PAT", "test-org")
-            .with_base_url(&uri);
+        let client = PaceClient::new("TEST_PAT", "test-org").with_base_url(&uri);
         client.get_current_timer()
-    }).await.unwrap().unwrap();
-    
+    })
+    .await
+    .unwrap()
+    .unwrap();
+
     assert!(timer.is_none());
 }
 
 #[tokio::test]
 async fn test_create_worklog_success() {
     let mock_server = MockServer::start().await;
-    
+
     Mock::given(method("POST"))
         .and(path("/_apis/worklogs"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
@@ -122,14 +130,16 @@ async fn test_create_worklog_success() {
         })))
         .mount(&mock_server)
         .await;
-    
+
     let uri = mock_server.uri();
     let worklog = tokio::task::spawn_blocking(move || {
-        let client = PaceClient::new("TEST_PAT", "test-org")
-            .with_base_url(&uri);
+        let client = PaceClient::new("TEST_PAT", "test-org").with_base_url(&uri);
         client.create_worklog(123, 7200, Some("Manual entry".to_string()))
-    }).await.unwrap().unwrap();
-    
+    })
+    .await
+    .unwrap()
+    .unwrap();
+
     assert_eq!(worklog.id, 999);
     assert_eq!(worklog.work_item_id, 123);
     assert_eq!(worklog.duration, 7200);
@@ -138,7 +148,7 @@ async fn test_create_worklog_success() {
 #[tokio::test]
 async fn test_get_worklogs_success() {
     let mock_server = MockServer::start().await;
-    
+
     Mock::given(method("GET"))
         .and(path("/_apis/worklogs"))
         .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!([
@@ -161,16 +171,18 @@ async fn test_get_worklogs_success() {
         ])))
         .mount(&mock_server)
         .await;
-    
+
     let uri = mock_server.uri();
     let worklogs = tokio::task::spawn_blocking(move || {
-        let client = PaceClient::new("TEST_PAT", "test-org")
-            .with_base_url(&uri);
+        let client = PaceClient::new("TEST_PAT", "test-org").with_base_url(&uri);
         let start = Utc::now() - chrono::Duration::days(7);
         let end = Utc::now();
         client.get_worklogs(start, end)
-    }).await.unwrap().unwrap();
-    
+    })
+    .await
+    .unwrap()
+    .unwrap();
+
     assert_eq!(worklogs.len(), 2);
     assert_eq!(worklogs[0].id, 1);
     assert_eq!(worklogs[0].duration, 1800);

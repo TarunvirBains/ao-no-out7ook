@@ -1,6 +1,6 @@
 use crate::devops::client::DevOpsClient;
 use crate::devops::models::WorkItem;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::fmt;
 use termtree::Tree;
 
@@ -35,7 +35,7 @@ pub fn build_tree(client: &DevOpsClient, root_id: u32, depth: u8) -> Result<Hier
             .filter(|r| r.rel == "System.LinkTypes.Hierarchy-Forward")
             .filter_map(|r| {
                 // "url": "https://.../_apis/wit/workItems/123"
-                r.url.split('/').last().and_then(|s| s.parse().ok())
+                r.url.split('/').next_back().and_then(|s| s.parse().ok())
             })
             .collect();
 
@@ -77,7 +77,7 @@ fn build_tree_recursive(client: &DevOpsClient, item: WorkItem, depth: u8) -> Res
         let child_ids: Vec<u32> = relations
             .iter()
             .filter(|r| r.rel == "System.LinkTypes.Hierarchy-Forward")
-            .filter_map(|r| r.url.split('/').last().and_then(|s| s.parse().ok()))
+            .filter_map(|r| r.url.split('/').next_back().and_then(|s| s.parse().ok()))
             .collect();
 
         if !child_ids.is_empty() {
