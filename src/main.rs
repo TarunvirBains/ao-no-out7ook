@@ -19,9 +19,14 @@ enum Commands {
     Start {
         #[arg(help = "DevOps Work Item ID")]
         id: u32,
+        #[arg(long, help = "Preview without starting timer")]
+        dry_run: bool,
     },
     /// Stop current task
-    Stop,
+    Stop {
+        #[arg(long, help = "Preview without stopping timer")]
+        dry_run: bool,
+    },
     /// Switch to a new task
     Switch {
         #[arg(help = "New Work Item ID")]
@@ -99,16 +104,15 @@ fn main() -> Result<()> {
     });
 
     match &cli.command {
-        Commands::Start { id } => {
-            commands::task::start(*id, &config)?;
+        Commands::Start { id, dry_run } => {
+            commands::task::start(*id, &config, *dry_run)?;
         }
-        Commands::Stop => {
-            commands::task::stop()?;
+        Commands::Stop { dry_run } => {
+            commands::task::stop(*dry_run)?;
         }
         Commands::Switch { id } => {
-            // Switch is basically Stop then Start
-            commands::task::stop()?;
-            commands::task::start(*id, &config)?;
+            commands::task::stop(false)?;
+            commands::task::start(*id, &config, false)?;
         }
         Commands::Current => {
             commands::task::current()?;

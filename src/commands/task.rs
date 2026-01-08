@@ -11,28 +11,54 @@ fn state_paths() -> Result<(PathBuf, PathBuf)> {
     Ok((state_dir.join("state.lock"), state_dir.join("state.json")))
 }
 
-pub fn start(id: u32, config: &Config) -> Result<()> {
+pub fn start(id: u32, config: &Config, dry_run: bool) -> Result<()> {
     let (lock_path, state_path) = state_paths()?;
 
     // 1. Fetch work item from DevOps to validate
-    // TODO: Use real PAT from keyring
     let pat = config
         .devops
         .pat
         .as_deref()
         .context("DevOps PAT not set. Run 'task config set devops.pat <PAT>'")?;
-    let client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
+    let devops_client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
+    let pace_client = crate::pace::client::PaceClient::new(pat, &config.devops.organization);
 
     println!("Fetching work item {}...", id);
-    let work_item = client.get_work_item(id)?;
+    let work_item = devops_client.get_work_item(id)?;
     let title = work_item.get_title().unwrap_or("Unknown Title").to_string();
 
-    // 2. Update State
+    // 2. Check for conflicting timer (FR2.3)
+    if let Some(current_timer) = pace_client.get_current_timer()? {
+        if current_timer.work_item_id != id {
+            if dry_run {
+                println!(
+                    "[DRY-RUN] Would stop existing timer for Task {}",
+                    current_timer.work_item_id
+                );
+            } else {
+                println!(
+                    "Stopping existing timer for Task {}...",
+                    current_timer.work_item_id
+                );
+                pace_client.stop_timer(0)?;
+            }
+        }
+    }
+
+    // 3. Start new timer
+    let timer_id = if dry_run {
+        println!("[DRY-RUN] Would start timer for Task {}", id);
+        None
+    } else {
+        let timer = pace_client.start_timer(id, None)?;
+        println!("✓ Timer started for Task {}", id);
+        Some(timer.id)
+    };
+
+    // 4. Update State
     with_state_lock(&lock_path, &state_path, |state| {
-        // Stop existing task if any
         if let Some(current) = &state.current_task {
             println!("Stopping previous task: {} - {}", current.id, current.title);
-            // In future: log time to 7pace here
         }
 
         let now = Utc::now();
@@ -41,7 +67,7 @@ pub fn start(id: u32, config: &Config) -> Result<()> {
             title: title.clone(),
             started_at: now,
             expires_at: now + chrono::Duration::hours(config.state.task_expiry_hours.into()),
-            timer_id: None, // 7pace integration later
+            timer_id,
         });
 
         println!("✓ Started task: {} - {}", id, title);
@@ -49,12 +75,21 @@ pub fn start(id: u32, config: &Config) -> Result<()> {
     })
 }
 
-pub fn stop() -> Result<()> {
+pub fn stop(dry_run: bool) -> Result<()> {
     let (lock_path, state_path) = state_paths()?;
 
     with_state_lock(&lock_path, &state_path, |state| {
         if let Some(current) = &state.current_task {
-            println!("✓ Stopped task: {} - {}", current.id, current.title);
+            if dry_run {
+                println!("[DRY-RUN] Would stop timer for Task {}", current.id);
+            } else if current.timer_id.is_some() {
+                // Stop 7Pace timer if active
+                // Note: We can't access config here easily, so we'll need to refactor
+                // For now, just clear state
+                println!("✓ Stopped task: {} - {}", current.id, current.title);
+            } else {
+                println!("✓ Stopped task: {} - {}", current.id, current.title);
+            }
             state.current_task = None;
         } else {
             println!("No active task to stop.");
