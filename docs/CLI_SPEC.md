@@ -1,6 +1,6 @@
 # CLI Specification
 
-> **Complete command reference for the DevOps CLI tool.**
+> **Complete command reference for the DevOps CLI tool (Phase 4).**
 
 ---
 
@@ -9,11 +9,311 @@
 All commands support these global flags:
 
 ```bash
---config <PATH>      Override default config file location
---verbose, -v        Enable verbose logging
---quiet, -q          Suppress all output except errors
 --help, -h           Show help for command
 --version, -V        Show version information
+```
+
+---
+
+## **Command Structure**
+
+```
+task <COMMAND> [OPTIONS] [ARGS]
+```
+
+---
+
+## **Commands**
+
+### **Task Management**
+
+#### `task start <ID>`
+
+Start working on a task. Optionally auto-schedules a Focus Block.
+
+**Arguments:**
+- `<ID>` - DevOps Work Item ID
+
+**Options:**
+- `--dry-run` - Preview without starting timer
+- `--schedule-focus` - Auto-schedule Focus Block in calendar at next available slot
+
+**Examples:**
+```bash
+task start 12345
+task start 12345 --schedule-focus
+```
+
+---
+
+#### `task stop`
+
+Stop current task and stop the active timer.
+
+**Options:**
+- `--dry-run` - Preview without stopping timer
+
+**Examples:**
+```bash
+task stop
+```
+
+---
+
+#### `task switch <ID>`
+
+Switch to a different task. Stops current task/timer and starts new one.
+
+**Arguments:**
+- `<ID>` - New Work Item ID
+
+**Examples:**
+```bash
+task switch 67890
+```
+
+---
+
+#### `task current`
+
+Show currently active task and timer status.
+
+**Examples:**
+```bash
+task current
+```
+
+---
+
+#### `task checkin`
+
+Check in after a Focus Block (interactive). Prompts to Continue, Blocked, or Complete.
+
+**Examples:**
+```bash
+task checkin
+```
+
+---
+
+### **Work Item Operations**
+
+#### `task list [OPTIONS]`
+
+List work items with filtering.
+
+**Options:**
+- `--state <STATE>` - Filter by state (e.g. Active)
+- `--assigned-to <USER>` - Filter by assignee (email or 'me')
+- `--limit <N>` - Limit results (default: 50)
+
+**Examples:**
+```bash
+task list --state Active
+task list --assigned-to me
+```
+
+---
+
+#### `task show <ID>`
+
+Show detailed information about a work item.
+
+**Arguments:**
+- `<ID>` - Work Item ID
+
+**Examples:**
+```bash
+task show 12345
+```
+
+---
+
+#### `task state <ID> [NEW_STATE]`
+
+Update work item state.
+
+**Arguments:**
+- `<ID>` - Work Item ID
+- `[NEW_STATE]` - Optional: New state (target)
+
+**Options:**
+- `--dry-run` - Preview changes without applying
+
+**Examples:**
+```bash
+task state 12345 Active
+task state 12345 Resolved --dry-run
+```
+
+---
+
+### **Markdown Operations (Phase 4)**
+
+#### `task export`
+
+Export work items to Markdown.
+
+**Options:**
+- `--ids <IDS>` - Work item IDs to export (comma-separated)
+- `--hierarchy` - Export entire hierarchy (parents/children)
+- `-o, --output <PATH>` - Output file path
+
+**Examples:**
+```bash
+task export --ids 123 -o work.md
+task export --ids 123 --hierarchy -o epic-tree.md
+```
+
+#### `task import <FILE>`
+
+Import work items from Markdown (creates or updates).
+
+**Arguments:**
+- `<FILE>` - Input markdown file path
+
+**Options:**
+- `--dry-run` - Preview changes without applying
+- `--validate` - Validate only, don't import
+- `--force` - Force import of completed/closed items (overrides `devops.skip_states`)
+
+**Examples:**
+```bash
+task import work.md
+task import work.md --dry-run
+task import work.md --validate
+task import work.md --force
+```
+
+---
+
+### **7Pace / Time Tracking**
+
+#### `task log-time <ID>`
+
+Manually log time to a work item.
+
+**Arguments:**
+- `<ID>` - Work Item ID
+
+**Options:**
+- `--hours <HOURS>` - Hours to log (decimal, e.g. 1.5)
+- `--comment <TEXT>` - Optional comment
+- `--dry-run` - Preview without logging
+
+**Examples:**
+```bash
+task log-time 12345 --hours 1.5 --comment "Code review"
+```
+
+#### `task worklogs`
+
+Show recent worklogs.
+
+**Options:**
+- `--days <N>` - Number of days to show (default: 7)
+
+**Examples:**
+```bash
+task worklogs
+task worklogs --days 14
+```
+
+---
+
+### **Calendar & OAuth**
+
+#### `task oauth <ACTION>`
+
+Manage Microsoft Graph OAuth authentication.
+
+**Actions:**
+- `login` - Authenticate with Microsoft Graph (device code flow)
+- `status` - Show current authentication status
+
+**Examples:**
+```bash
+task oauth login
+task oauth status
+```
+
+#### `task calendar <ACTION>`
+
+Calendar operations.
+
+**Actions:**
+- `list` - List calendar events
+  - `--days <N>` - Number of days to show (default: 7)
+  - `--work-item <ID>` - Filter by work item ID
+- `schedule <ID>` - Schedule Focus Block for work item
+  - `--start <ISO8601>` - Start time
+  - `--duration <MIN>` - Duration in minutes (default: 45)
+  - `--title <TEXT>` - Custom title
+- `delete <EVENT_ID>` - Delete calendar event
+
+**Examples:**
+```bash
+task calendar list
+task calendar schedule 12345 --duration 60
+task calendar delete "event-id-123"
+```
+
+---
+
+### **Configuration**
+
+#### `task config <ACTION>`
+
+Manage configuration.
+
+**Actions:**
+- `list` - List all configuration values
+- `set <KEY> <VALUE>` - Set a configuration value
+- `get <KEY>` - Get a specific configuration value
+
+**Examples:**
+```bash
+task config list
+task config set devops.organization "myorg"
+task config get work_hours.start
+```
+
+---
+
+## **Configuration Reference**
+
+Location: `~/.ao-no-out7ook/config.toml`
+
+```toml
+[devops]
+organization = "..."
+project = "..."
+pat = "..." (optional)
+skip_states = ["Completed", "Resolved", "Closed", "Removed"] # Phase 4
+
+[graph]
+client_id = "..."
+tenant_id = "..."
+
+[work_hours]
+start = "09:00"
+end = "17:00"
+
+[focus_blocks]
+duration_minutes = 45
+buffer_minutes = 15
+
+[state]
+storage_path = "..."
+```
+
+---
+
+## **Exit Codes**
+
+```
+0   Success
+1   General check failure / Error
 ```
 
 ---
