@@ -1,6 +1,5 @@
 use crate::devops::models::WorkItem;
 use anyhow::Result;
-use std::collections::HashMap;
 
 // Simple Frontmatter + Body format
 // ---
@@ -113,6 +112,140 @@ fn strip_html_tags(html: &str) -> String {
     result.trim().to_string()
 }
 
+/// Validation error with line content and suggestions (FR4.3)
+#[derive(Debug, Clone)]
+pub struct ValidationError {
+    pub line: usize,
+    pub line_content: String,
+    pub message: String,
+    pub suggestion: Option<String>,
+    pub severity: Severity,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Severity {
+    Error,   // Blocks import
+    Warning, // Allows import but shows warning
+}
+
+/// Validate markdown structure with hierarchy checks (FR4.3)
+pub fn validate_markdown_structure(content: &str) -> Result<Vec<ValidationError>> {
+    let mut errors = Vec::new();
+    let _lines: Vec<&str> = content.lines().collect();
+
+    // Parse items first
+    let items = from_markdown(content)?;
+
+    // Validate each item
+    for (idx, item) in items.iter().enumerate() {
+        // Find the line number for this item (approximate)
+        let line_num = idx + 1; // Simple approximation
+        let line_content = format!(
+            "{} {}: {} (#{})",
+            get_header_prefix(&item.work_item_type),
+            item.work_item_type,
+            item.title,
+            item.id.unwrap_or(0)
+        );
+
+        // Required field: State
+        if !item.fields.contains_key("System.State") {
+            errors.push(ValidationError {
+                line: line_num,
+                line_content: line_content.clone(),
+                message: format!("{} is missing required field: State", item.work_item_type),
+                suggestion: Some("Add **State:** <value> to the metadata line".to_string()),
+                severity: Severity::Error,
+            });
+        }
+
+        // Hierarchy validation
+        match item.work_item_type.as_str() {
+            "Feature" => {
+                if item.parent_id.is_none() {
+                    errors.push(ValidationError {
+                        line: line_num,
+                        line_content: line_content.clone(),
+                        message: "Feature must have an Epic parent".to_string(),
+                        suggestion: Some(
+                            "Add **Parent:** #<epic_id> to the metadata line".to_string(),
+                        ),
+                        severity: Severity::Error,
+                    });
+                }
+            }
+            "User Story" => {
+                if item.parent_id.is_none() {
+                    errors.push(ValidationError {
+                        line: line_num,
+                        line_content: line_content.clone(),
+                        message: "User Story must have a Feature or Epic parent".to_string(),
+                        suggestion: Some(
+                            "Add **Parent:** #<feature_id> to the metadata line".to_string(),
+                        ),
+                        severity: Severity::Error,
+                    });
+                }
+            }
+            "Task" | "Bug" => {
+                if item.parent_id.is_none() {
+                    errors.push(ValidationError {
+                        line: line_num,
+                        line_content: line_content.clone(),
+                        message: format!(
+                            "{} must have a User Story or Feature parent",
+                            item.work_item_type
+                        ),
+                        suggestion: Some(
+                            "Add **Parent:** #<story_id> to the metadata line".to_string(),
+                        ),
+                        severity: Severity::Error,
+                    });
+                }
+            }
+            "Epic" => {
+                // Epic can be standalone
+            }
+            _ => {
+                errors.push(ValidationError {
+                    line: line_num,
+                    line_content: line_content,
+                    message: format!("Unknown work item type: {}", item.work_item_type),
+                    suggestion: Some("Use Epic, Feature, User Story, Task, or Bug".to_string()),
+                    severity: Severity::Warning,
+                });
+            }
+        }
+    }
+
+    Ok(errors)
+}
+
+fn get_header_prefix(work_item_type: &str) -> &'static str {
+    match work_item_type {
+        "Epic" => "#",
+        "Feature" => "##",
+        "User Story" => "###",
+        "Task" | "Bug" => "####",
+        _ => "###",
+    }
+}
+
+/// Display validation errors in user-friendly format
+pub fn display_validation_errors(errors: &[ValidationError]) {
+    for error in errors {
+        match error.severity {
+            Severity::Error => println!("❌ Line {}: {}", error.line, error.line_content),
+            Severity::Warning => println!("⚠  Line {}: {}", error.line, error.line_content),
+        }
+        println!("    Error: {}", error.message);
+        if let Some(suggestion) = &error.suggestion {
+            println!("    Suggestion: {}", suggestion);
+        }
+        println!();
+    }
+}
+
 /// Enhanced parsed work item (FR4.2)
 #[derive(Debug, Clone)]
 pub struct ParsedWorkItem {
@@ -146,7 +279,7 @@ pub fn from_markdown(content: &str) -> Result<Vec<ParsedWorkItem>> {
     Ok(items)
 }
 
-fn parse_work_item(lines: &[&str], start_line: usize) -> Result<(ParsedWorkItem, usize)> {
+fn parse_work_item(lines: &[&str], _start_line: usize) -> Result<(ParsedWorkItem, usize)> {
     let header_line = lines[0];
 
     // Parse header: "## Feature: Title (#123)"
