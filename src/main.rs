@@ -15,12 +15,21 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Start working on a task
+    ///
+    /// Creates a Focus Block in Outlook, starts a 7Pace timer, and sets the task as current.
+    /// Useful for establishing context before beginning work.
     Start {
-        #[arg(help = "DevOps Work Item ID")]
+        #[arg(help = "DevOps Work Item ID (e.g., 12345)")]
         id: u32,
-        #[arg(long, help = "Preview without starting timer")]
+        #[arg(
+            long,
+            help = "Preview actions without starting timer or creating calendar event"
+        )]
         dry_run: bool,
-        #[arg(long, help = "Auto-schedule Focus Block in calendar")]
+        #[arg(
+            long,
+            help = "Auto-schedule a Focus Block in the calendar for immediate work"
+        )]
         schedule_focus: bool,
     },
     /// Stop current task
@@ -36,6 +45,9 @@ enum Commands {
     /// Show current task status
     Current,
     /// Check in after Focus Block (Continue/Blocked/Complete)
+    ///
+    /// Interactive command to update task status after a focus session.
+    /// Agents: Use 'task state' or 'task stop' for non-interactive updates instead.
     Checkin,
     /// List configuration
     Config(ConfigArgs),
@@ -66,6 +78,10 @@ enum Commands {
         dry_run: bool,
     },
     /// Export work items to Markdown (Phase 4)
+    ///
+    /// Exports one or more work items to a hierarchical Markdown format.
+    /// Use --hierarchy to include all children (features, stories, tasks).
+    /// This is the preferred format for AI agents to read and reason about work scope.
     Export {
         #[arg(
             long,
@@ -73,21 +89,28 @@ enum Commands {
             value_delimiter = ','
         )]
         ids: Vec<u32>,
-        #[arg(long, help = "Export entire hierarchy")]
+        #[arg(long, help = "Export entire hierarchy (parents and children)")]
         hierarchy: bool,
         #[arg(short, long, help = "Output file path")]
         output: std::path::PathBuf,
     },
 
     /// Import work items from Markdown (Phase 4)
+    ///
+    /// Parses Markdown and updates or creates work items in DevOps.
+    /// To CREATE a new item, use ID #0 or omit the ID in the markdown header.
+    /// To UPDATE, ensure the ID matches an existing work item.
     Import {
         #[arg(help = "Input markdown file path")]
         file: std::path::PathBuf,
-        #[arg(long, help = "Preview changes without applying")]
+        #[arg(long, help = "Preview changes (diff) without applying to DevOps")]
         dry_run: bool,
-        #[arg(long, help = "Validate only, don't import")]
+        #[arg(long, help = "Validate markdown structure only, do not contact DevOps")]
         validate: bool,
-        #[arg(long, help = "Force import of completed/closed items")]
+        #[arg(
+            long,
+            help = "Force import of completed/closed items (overrides skip_states config)"
+        )]
         force: bool,
     },
 
