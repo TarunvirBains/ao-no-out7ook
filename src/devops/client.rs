@@ -160,6 +160,52 @@ impl DevOpsClient {
         self.update_work_item_with_rev(id, operations, None)
     }
 
+    /// Create a new work item
+    pub fn create_work_item(
+        &self,
+        fields: serde_json::Map<String, serde_json::Value>,
+    ) -> Result<WorkItem> {
+        // Extract work item type from fields
+        let work_item_type = fields
+            .get("System.WorkItemType")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Task");
+
+        let url = format!(
+            "{}/{}/_apis/wit/workitems/${}?api-version=7.1",
+            self.base_url, self.project, work_item_type
+        );
+
+        // Build JSON Patch document for creation
+        let mut operations = Vec::new();
+        for (key, value) in fields {
+            operations.push(serde_json::json!({
+                "op": "add",
+                "path": format!("/fields/{}", key),
+                "value": value
+            }));
+        }
+
+        let response = self
+            .client
+            .post(&url)
+            .basic_auth("", Some(&self.pat))
+            .header("Content-Type", "application/json-patch+json")
+            .json(&operations)
+            .send()
+            .context("Failed to send create work item request")?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().unwrap_or_default();
+            anyhow::bail!("Create work item failed ({}): {}", status, body);
+        }
+
+        response
+            .json::<WorkItem>()
+            .context("Failed to parse created work item")
+    }
+
     pub fn update_work_item_with_rev(
         &self,
         id: u32,

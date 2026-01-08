@@ -128,26 +128,50 @@ pub fn import(
             // Update existing work item
             println!("Updating {} #{}...", item.work_item_type, id);
 
-            let mut update_fields = serde_json::Map::new();
+            // Build patch operations
+            let mut operations = Vec::new();
             for (key, val) in &item.fields {
-                update_fields.insert(key.clone(), serde_json::json!(val));
+                operations.push(serde_json::json!({
+                    "op": "add",
+                    "path": format!("/fields/{}", key),
+                    "value": val
+                }));
             }
 
             if !item.description.is_empty() {
-                update_fields.insert(
+                operations.push(serde_json::json!({
+                    "op": "add",
+                    "path": "/fields/System.Description",
+                    "value": item.description
+                }));
+            }
+
+            client.update_work_item(id, operations)?;
+            println!("✓ Updated #{}", id);
+        } else {
+            // Create new work item
+            println!("Creating new {} '{}'...", item.work_item_type, item.title);
+
+            let mut fields = serde_json::Map::new();
+            fields.insert(
+                "System.WorkItemType".to_string(),
+                serde_json::json!(item.work_item_type),
+            );
+            fields.insert("System.Title".to_string(), serde_json::json!(item.title));
+
+            for (key, val) in &item.fields {
+                fields.insert(key.clone(), serde_json::json!(val));
+            }
+
+            if !item.description.is_empty() {
+                fields.insert(
                     "System.Description".to_string(),
                     serde_json::json!(item.description),
                 );
             }
 
-            client.update_work_item(id, update_fields)?;
-            println!("✓ Updated #{}", id);
-        } else {
-            // TODO: Implement create_work_item in DevOpsClient
-            println!(
-                "⊘ Skipping creation of new {} '{}' (not yet implemented)",
-                item.work_item_type, item.title
-            );
+            let new_item = client.create_work_item(fields)?;
+            println!("✓ Created #{}", new_item.id);
         }
     }
 
