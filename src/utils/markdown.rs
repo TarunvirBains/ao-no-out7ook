@@ -113,58 +113,207 @@ fn strip_html_tags(html: &str) -> String {
     result.trim().to_string()
 }
 
+/// Enhanced parsed work item (FR4.2)
+#[derive(Debug, Clone)]
 pub struct ParsedWorkItem {
     pub id: Option<u32>,
-    pub fields: HashMap<String, String>,
+    pub work_item_type: String,
+    pub title: String,
+    pub fields: std::collections::HashMap<String, String>,
+    pub parent_id: Option<u32>,
     pub description: String,
 }
 
-pub fn from_markdown(content: &str) -> Result<ParsedWorkItem> {
-    // Very basic parser for MVP.
-    // Split by "---"
-    let parts: Vec<&str> = content.splitn(3, "---").collect();
+/// Parse hierarchical markdown back to work items (FR4.2)
+pub fn from_markdown(content: &str) -> Result<Vec<ParsedWorkItem>> {
+    let mut items = Vec::new();
+    let lines: Vec<&str> = content.lines().collect();
+    let mut i = 0;
 
-    if parts.len() < 3 {
-        // Maybe no frontmatter?
-        return Ok(ParsedWorkItem {
-            id: None,
-            fields: HashMap::new(),
-            description: content.to_string(),
-        });
+    while i < lines.len() {
+        let line = lines[i].trim();
+
+        // Check for work item header (# Epic, ## Feature, ### Story, #### Task)
+        if line.starts_with('#') {
+            let (item, consumed) = parse_work_item(&lines[i..], i + 1)?;
+            items.push(item);
+            i += consumed;
+        } else {
+            i += 1;
+        }
     }
 
-    let frontmatter = parts[1];
-    let body = parts[2].trim();
+    Ok(items)
+}
 
-    let mut fields = HashMap::new();
-    let mut id = None;
+fn parse_work_item(lines: &[&str], start_line: usize) -> Result<(ParsedWorkItem, usize)> {
+    let header_line = lines[0];
 
-    for line in frontmatter.lines() {
-        if let Some((key, val)) = line.split_once(':') {
-            let key = key.trim();
-            let val = val.trim();
-            match key {
-                "id" => id = val.parse().ok(),
-                "title" => {
-                    fields.insert("System.Title".to_string(), val.to_string());
+    // Parse header: "## Feature: Title (#123)"
+    let (header_level, rest) = parse_header(header_line)?;
+    let work_item_type = determine_type_from_header(header_level, rest)?;
+
+    // Extract title and ID from "Feature: Title (#123)"
+    let (title, id) = parse_title_and_id(rest)?;
+
+    // Parse metadata line if present
+    let mut fields = std::collections::HashMap::new();
+    let mut parent_id = None;
+    let mut description = String::new();
+    let mut consumed = 1;
+
+    if lines.len() > 1 {
+        let metadata_line = lines[1].trim();
+        if metadata_line.contains("**") {
+            // Parse metadata: "**State:** Active | **Parent:** #123"
+            parse_metadata(metadata_line, &mut fields, &mut parent_id)?;
+            consumed += 1;
+
+            // Collect description (lines after metadata until next header or separator)
+            let mut desc_lines = Vec::new();
+            for j in consumed..lines.len() {
+                let line = lines[j].trim();
+                if line.starts_with('#') || line.starts_with("---") {
+                    break;
                 }
-                "state" => {
-                    fields.insert("System.State".to_string(), val.to_string());
+                if !line.is_empty() {
+                    desc_lines.push(line);
                 }
-                "assigned_to" => {
-                    // Assigning by display name is tricky, usually need email or ID.
-                    // For now, ignore or store as hint?
-                }
-                _ => {}
+                consumed += 1;
+            }
+            if !desc_lines.is_empty() {
+                description = desc_lines.join("\n");
             }
         }
     }
 
-    Ok(ParsedWorkItem {
-        id,
-        fields,
-        description: body.to_string(),
-    })
+    Ok((
+        ParsedWorkItem {
+            id,
+            work_item_type,
+            title,
+            fields,
+            parent_id,
+            description,
+        },
+        consumed,
+    ))
+}
+
+fn parse_header(line: &str) -> Result<(usize, &str)> {
+    let level = line.chars().take_while(|&c| c == '#').count();
+    if level == 0 {
+        anyhow::bail!("Not a header line");
+    }
+    let rest = line[level..].trim();
+    Ok((level, rest))
+}
+
+fn determine_type_from_header(level: usize, content: &str) -> Result<String> {
+    // Try to extract type from content first (e.g., "Epic: Title")
+    if let Some(colon_pos) = content.find(':') {
+        let type_str = content[..colon_pos].trim();
+        return Ok(type_str.to_string());
+    }
+
+    // Fallback to header level
+    let type_name = match level {
+        1 => "Epic",
+        2 => "Feature",
+        3 => "User Story",
+        4 => "Task",
+        _ => anyhow::bail!("Invalid header level: {}", level),
+    };
+    Ok(type_name.to_string())
+}
+
+fn parse_title_and_id(content: &str) -> Result<(String, Option<u32>)> {
+    // Extract from "Epic: Title (#123)" or "Title (#123)"
+    let without_type = if let Some(colon_pos) = content.find(':') {
+        content[colon_pos + 1..].trim()
+    } else {
+        content
+    };
+
+    // Extract ID from "(#123)"
+    let id = if let Some(start) = without_type.rfind("(#") {
+        if let Some(end) = without_type[start..].find(')') {
+            let id_str = &without_type[start + 2..start + end];
+            id_str.parse().ok()
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Extract title (everything before "(#...")
+    let title = if let Some(paren_pos) = without_type.rfind("(#") {
+        without_type[..paren_pos].trim()
+    } else {
+        without_type.trim()
+    };
+
+    Ok((title.to_string(), id))
+}
+
+fn parse_metadata(
+    line: &str,
+    fields: &mut std::collections::HashMap<String, String>,
+    parent_id: &mut Option<u32>,
+) -> Result<()> {
+    // Split by "| " to get individual metadata items
+    let parts: Vec<&str> = line.split('|').map(|s| s.trim()).collect();
+
+    for part in parts {
+        if part.is_empty() {
+            continue;
+        }
+
+        // Parse "**Key:** Value"
+        if let Some(start) = part.find("**") {
+            if let Some(end) = part[start + 2..].find("**") {
+                let key = part[start + 2..start + 2 + end].trim();
+                let value = part[start + 2 + end + 2..].trim_start_matches(':').trim();
+
+                match key {
+                    "State" => {
+                        fields.insert("System.State".to_string(), value.to_string());
+                    }
+                    "Assigned" => {
+                        fields.insert("System.AssignedTo".to_string(), value.to_string());
+                    }
+                    "Priority" => {
+                        fields.insert(
+                            "Microsoft.VSTS.Common.Priority".to_string(),
+                            value.to_string(),
+                        );
+                    }
+                    "Effort" => {
+                        let effort_val = value.trim_end_matches('h');
+                        fields.insert(
+                            "Microsoft.VSTS.Scheduling.Effort".to_string(),
+                            effort_val.to_string(),
+                        );
+                    }
+                    "Tags" => {
+                        fields.insert("System.Tags".to_string(), value.replace(", ", ";"));
+                    }
+                    "Parent" => {
+                        if let Some(id_str) = value.strip_prefix('#') {
+                            *parent_id = id_str.parse().ok();
+                        }
+                    }
+                    _ => {
+                        // Store unknown fields as-is
+                        fields.insert(key.to_string(), value.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
