@@ -1,4 +1,4 @@
-use ano7::state::{State, with_state_lock};
+use ao_no_out7ook::state::{State, with_state_lock};
 use fs2::FileExt;
 use std::fs::OpenOptions;
 use std::thread;

@@ -1,4 +1,4 @@
-use ano7::config::{Config, load_from_path};
+use ao_no_out7ook::config::{Config, load_from_path};
 use std::io::Write;
 use tempfile::NamedTempFile;
 

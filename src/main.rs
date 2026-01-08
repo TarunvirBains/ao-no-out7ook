@@ -1,10 +1,10 @@
+use ao_no_out7ook::commands;
+use ao_no_out7ook::config;
 use anyhow::Result;
-use ano7::commands;
-use ano7::config;
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "ano7")]
+#[command(name = "ao_no_out7ook")]
 #[command(about = "SevenPace & Outlook Integration for DevOps")]
 #[command(version)]
 struct Cli {
@@ -145,6 +145,20 @@ enum Commands {
     Doc {
         #[arg(help = "Topic to read (e.g., 'story-breakdown', 'list')")]
         topic: Option<String>,
+    },
+
+    /// Export current task context for AI Agents
+    Context {
+        #[arg(long, default_value = "llm", help = "Format (currently only 'llm')")]
+        format: String,
+    },
+
+    /// Decompose a User Story into tasks via JSON input
+    Decompose {
+        #[arg(long, help = "Input JSON file path")]
+        input: std::path::PathBuf,
+        #[arg(long, help = "Preview changes without creating items")]
+        dry_run: bool,
     },
 }
 
@@ -348,9 +362,15 @@ fn main() -> Result<()> {
             _ => {
                 println!("Available documentation topics:");
                 println!("- story-breakdown: SOP for decomposing User Stories into Tasks");
-                println!("\nUsage: task doc <TOPIC>");
+                println!("\nUsage: ao_no_out7ook doc <TOPIC>");
             }
         },
+        Commands::Context { format } => {
+            commands::agent::agent_context(&config, format)?;
+        }
+        Commands::Decompose { input, dry_run } => {
+            commands::agent::agent_decompose(&config, input.clone(), *dry_run)?;
+        }
     }
 
     Ok(())

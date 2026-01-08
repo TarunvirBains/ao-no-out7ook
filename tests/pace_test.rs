@@ -1,5 +1,5 @@
-use ano7::pace::client::PaceClient;
-use ano7::pace::models::{StopTimerResponse, Timer, Worklog};
+use ao_no_out7ook::pace::client::PaceClient;
+use ao_no_out7ook::pace::models::{StopTimerResponse, Timer, Worklog};
 use chrono::Utc;
 use wiremock::matchers::{header, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
