@@ -114,7 +114,7 @@
 3. **FR5.3 (Schema Reflection):** CLI can output its own schema/capabilities so an Agent knows *how* to interact with it dynamically.
 4. **FR5.4 (Safe-Mode Diffs):** "Dry-run" outputs a precise diff of what *would* change in DevOps, allowing the Agent to ask "User, do you approve these 5 new sub-tasks?" before committing.
 
-**Outcome:** Users gain convenience, visual hierarchy, and calendar integration without sacrificing CLI robustness.
+**Outcome:** The CLI becomes a tool *for* AI, enabling autonomous task management and breakdown.
 
 ---
 
