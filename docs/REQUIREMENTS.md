@@ -114,7 +114,7 @@
 3. **FR5.3 (Schema Reflection):** CLI can output its own schema/capabilities so an Agent knows *how* to interact with it dynamically.
 4. **FR5.4 (Safe-Mode Diffs):** "Dry-run" outputs a precise diff of what *would* change in DevOps, allowing the Agent to ask "User, do you approve these 5 new sub-tasks?" before committing.
 
-**Outcome:** The CLI becomes a tool *for* AI, enabling autonomous task management and breakdown.
+**Outcome:** Users gain convenience, visual hierarchy, and calendar integration without sacrificing CLI robustness.
 
 ---
 
@@ -169,7 +169,7 @@
    - **FR2.1-2.8** make time tracking *invisible*.
 
 3. **AI-Augmented Workflows Are the Future**  
-   - **Phase 8**. Modern developers use AI copilots—this CLI lets the AI *drive* DevOps.  
+   - **Phase 5**. Modern developers use AI copilots—this CLI lets the AI *drive* DevOps.  
    - Example: "Break this feature into frontend/backend tasks" → AI generates JSON → `task decompose --input ai_tasks.json` → Done.
 
 4. **Markdown = Git-Friendly**  
@@ -193,7 +193,7 @@
    - **FR3.10** now provides optional Teams presence status sync (toggleable).  
    - Note: Teams calendar = Outlook calendar (same Exchange backend), so calendar integration already works for both.
 
-4. **Phase 8 Dependency on Phase 1**  
+4. **Phase 5 Dependency on Phase 1**  
    - AI integration is powerful, but only if Phase 1 is *rock-solid*.  
    - **Risk Mitigation:** Strict JSON schema validation (FR1.5-1.7) is critical.
 
