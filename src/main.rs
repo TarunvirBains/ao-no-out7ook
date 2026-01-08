@@ -36,6 +36,8 @@ enum Commands {
     },
     /// Show current task status
     Current,
+    /// Check in after Focus Block (Continue/Blocked/Complete)
+    Checkin,
     /// List configuration
     Config(ConfigArgs),
 
@@ -194,6 +196,9 @@ fn main() -> Result<()> {
         }
         Commands::Current => {
             commands::task::current()?;
+        }
+        Commands::Checkin => {
+            commands::checkin::checkin(&config)?;
         }
         Commands::Config(args) => match &args.action {
             ConfigAction::List => commands::config::list(&config)?,
