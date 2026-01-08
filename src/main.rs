@@ -31,6 +31,43 @@ enum Commands {
     Current,
     /// List configuration
     Config(ConfigArgs),
+
+    /// List work items
+    List {
+        #[arg(long, help = "Filter by state (e.g. Active)")]
+        state: Option<String>,
+        #[arg(long, help = "Filter by assignee (email or 'me')")]
+        assigned_to: Option<String>,
+        #[arg(long, help = "Limit results", default_value = "50")]
+        limit: u32,
+    },
+
+    /// Show work item details
+    Show {
+        #[arg(help = "Work Item ID")]
+        id: u32,
+    },
+
+    /// Update work item state
+    State {
+        #[arg(help = "Work Item ID")]
+        id: u32,
+        #[arg(help = "New state (target)")]
+        new_state: Option<String>,
+    },
+    /// Export work item to Markdown
+    Export {
+        #[arg(help = "Work Item ID")]
+        id: u32,
+        #[arg(long, help = "Output file path")]
+        output: Option<std::path::PathBuf>,
+    },
+
+    /// Import work item from Markdown
+    Import {
+        #[arg(help = "Input file path")]
+        file: std::path::PathBuf,
+    },
 }
 
 #[derive(Parser)]
@@ -77,6 +114,25 @@ fn main() -> Result<()> {
             ConfigAction::Set { key, value } => commands::config::set(key, value)?,
             ConfigAction::Get { key } => commands::config::get(key, &config)?,
         },
+        Commands::List {
+            state,
+            assigned_to,
+            limit,
+        } => {
+            commands::devops::list(&config, state.clone(), assigned_to.clone(), Some(*limit))?;
+        }
+        Commands::Show { id } => {
+            commands::devops::show(&config, *id)?;
+        }
+        Commands::State { id, new_state } => {
+            commands::devops::state(&config, *id, new_state.clone())?;
+        }
+        Commands::Export { id, output } => {
+            commands::devops::export(&config, *id, output.clone())?;
+        }
+        Commands::Import { file } => {
+            commands::devops::import(&config, file.clone())?;
+        }
     }
 
     Ok(())

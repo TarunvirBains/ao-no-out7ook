@@ -16,7 +16,11 @@ pub fn start(id: u32, config: &Config) -> Result<()> {
 
     // 1. Fetch work item from DevOps to validate
     // TODO: Use real PAT from keyring
-    let pat = config.devops.pat.as_deref().unwrap_or("DUMMY_PAT");
+    let pat = config
+        .devops
+        .pat
+        .as_deref()
+        .context("DevOps PAT not set. Run 'task config set devops.pat <PAT>'")?;
     let client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
 
     println!("Fetching work item {}...", id);

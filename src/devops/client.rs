@@ -32,10 +32,37 @@ impl DevOpsClient {
         format!("Basic {}", BASE64_STANDARD.encode(val))
     }
 
+    pub fn get_work_item_type(
+        &self,
+        type_name: &str,
+    ) -> Result<crate::devops::models::WorkItemType> {
+        let url = format!(
+            "{}/{}/_apis/wit/workitemtypes/{}?api-version=7.0",
+            self.base_url, self.project, type_name
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .header("Authorization", self.auth_header())
+            .send()
+            .context("Failed to fetch work item type definition")?;
+
+        if !response.status().is_success() {
+            anyhow::bail!("WorkItemType API error: status {}", response.status());
+        }
+
+        let type_def = response
+            .json::<crate::devops::models::WorkItemType>()
+            .context("Failed to parse WorkItemType")?;
+
+        Ok(type_def)
+    }
+
     pub fn get_work_item(&self, id: u32) -> Result<WorkItem> {
         // GET https://dev.azure.com/{org}/{project}/_apis/wit/workitems/{id}?api-version=7.0
         let url = format!(
-            "{}/{}/_apis/wit/workitems/{}?api-version=7.0",
+            "{}/{}/_apis/wit/workitems/{}?$expand=all&api-version=7.0",
             self.base_url, self.project, id
         );
 
@@ -53,6 +80,101 @@ impl DevOpsClient {
         let work_item = response
             .json::<WorkItem>()
             .context("Failed to parse WorkItem JSON response")?;
+
+        Ok(work_item)
+    }
+
+    pub fn get_work_items_batch(&self, ids: &[u32]) -> Result<Vec<WorkItem>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let ids_str = ids
+            .iter()
+            .map(|id| id.to_string())
+            .collect::<Vec<_>>()
+            .join(",");
+        let url = format!(
+            "{}/{}/_apis/wit/workitems?ids={}&$expand=all&api-version=7.0",
+            self.base_url, self.project, ids_str
+        );
+
+        let response = self
+            .client
+            .get(&url)
+            .header("Authorization", self.auth_header())
+            .send()
+            .context("Failed to batch fetch work items")?;
+
+        if !response.status().is_success() {
+            anyhow::bail!("DevOps Batch API error: status {}", response.status());
+        }
+
+        // Response is { "count": N, "value": [ ... ] }
+        let json_val = response.json::<serde_json::Value>()?;
+        let items_val = json_val
+            .get("value")
+            .context("Batch response missing 'value' field")?;
+
+        let items: Vec<WorkItem> = serde_json::from_value(items_val.clone())
+            .context("Failed to deserialize batch work items")?;
+
+        Ok(items)
+    }
+
+    pub fn execute_wiql(&self, query: &str) -> Result<crate::devops::models::WiqlResponse> {
+        let url = format!(
+            "{}/{}/_apis/wit/wiql?api-version=7.0",
+            self.base_url, self.project
+        );
+
+        let body = serde_json::json!({ "query": query });
+
+        let response = self
+            .client
+            .post(&url)
+            .header("Authorization", self.auth_header())
+            .json(&body)
+            .send()
+            .context("Failed to execute WIQL")?;
+
+        if !response.status().is_success() {
+            anyhow::bail!("WIQL API error: status {}", response.status());
+        }
+
+        let wiql_resp = response
+            .json::<crate::devops::models::WiqlResponse>()
+            .context("Failed to parse WiqlResponse")?;
+
+        Ok(wiql_resp)
+    }
+
+    pub fn update_work_item(
+        &self,
+        id: u32,
+        operations: Vec<serde_json::Value>,
+    ) -> Result<WorkItem> {
+        let url = format!(
+            "{}/{}/_apis/wit/workitems/{}?api-version=7.0",
+            self.base_url, self.project, id
+        );
+
+        let response = self
+            .client
+            .patch(&url)
+            .header("Authorization", self.auth_header())
+            .header("Content-Type", "application/json-patch+json")
+            .json(&operations)
+            .send()
+            .context("Failed to update work item")?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().unwrap_or_default();
+            anyhow::bail!("Update API error: {}. details: {}", id, error_text);
+        }
+
+        let work_item = response
+            .json::<WorkItem>()
+            .context("Failed to parse updated WorkItem")?;
 
         Ok(work_item)
     }

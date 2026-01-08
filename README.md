@@ -1,4 +1,4 @@
-# ao-no-out7ook (Azure + 7Pace + Outlook Integration)
+# ao-no-out7ook (Azure DevOps + 7Pace Timetracker + Outlook Calendar Integration)
 
 A powerful Rust-based CLI for seamless integration between Azure DevOps, 7Pace Timetracker, and Microsoft Outlook Calendar. Designed for developers who want to minimize context switching and maximize productivity.
 

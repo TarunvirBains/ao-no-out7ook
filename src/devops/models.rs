@@ -8,7 +8,16 @@ pub struct WorkItem {
     pub rev: u32,
     pub fields: HashMap<String, Value>,
     #[serde(default)]
+    pub relations: Option<Vec<WorkItemRelation>>,
+    #[serde(default)]
     pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WorkItemRelation {
+    pub rel: String,
+    pub url: String,
+    pub attributes: Option<HashMap<String, Value>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -30,6 +39,19 @@ pub struct WorkItemUpdate {
     pub id: u32,
     pub rev: u32,
     pub fields: Option<HashMap<String, Value>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WorkItemType {
+    pub name: String,
+    pub states: Vec<WorkItemStateColor>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct WorkItemStateColor {
+    pub name: String,
+    pub color: String,
+    pub category: String,
 }
 
 // Helper to access common fields easily
