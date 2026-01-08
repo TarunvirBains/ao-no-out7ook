@@ -105,15 +105,16 @@
 
 ---
 
-## **Phase 5: Optional Frontends (GUI & Editor Plugins)**
+## **Phase 5: AI & Agent Integration**
 
-**Goal:** Provide user-friendly interfaces while relying on CLI core.
+**Goal:** Empower AI agents (Copilot, Windsurf, etc.) to act as intelligent drivers of the DevOps process using the CLI as their "hands".
 
-1. **FR5.1:** Frontends may include VS Code plugin, Dioxus/Tauri GUI, Vim/Emacs/JetBrains plugins.
-2. **FR5.2:** All frontends call CLI core for operations.
-3. **FR5.3:** Display unsynced changes, conflicts, time logged vs planned, hierarchy visualization.
+1. **FR5.1 (Context Export):** `task context --format llm` command to dump current task, parent, and siblings in token-optimized format for AI reasoning.
+2. **FR5.2 (Decomposition):** Support bulk child-item creation JSON input to allow Agents to "explode" a story into tasks in one operation.
+3. **FR5.3 (Schema Reflection):** CLI can output its own schema/capabilities so an Agent knows *how* to interact with it dynamically.
+4. **FR5.4 (Safe-Mode Diffs):** "Dry-run" outputs a precise diff of what *would* change in DevOps, allowing the Agent to ask "User, do you approve these 5 new sub-tasks?" before committing.
 
-**Outcome:** Users gain convenience, visual hierarchy, and calendar integration without sacrificing CLI robustness.
+**Outcome:** The CLI becomes a tool *for* AI, enabling autonomous task management and breakdown.
 
 ---
 
@@ -143,16 +144,15 @@
 
 ---
 
-## **Phase 8: AI & Agent Integration**
+## **Phase 8: Optional Frontends (GUI & Editor Plugins)**
 
-**Goal:** Empower AI agents (Copilot, Windsurf, etc.) to act as intelligent drivers of the DevOps process using the CLI as their "hands".
+**Goal:** Provide user-friendly interfaces while relying on CLI core.
 
-1. **FR8.1 (Context Export):** `task context --format llm` command to dump current task, parent, and siblings in token-optimized format for AI reasoning.
-2. **FR8.2 (Decomposition):** Support bulk child-item creation JSON input to allow Agents to "explode" a story into tasks in one operation.
-3. **FR8.3 (Schema Reflection):** CLI can output its own schema/capabilities so an Agent knows *how* to interact with it dynamically.
-4. **FR8.4 (Safe-Mode Diffs):** "Dry-run" outputs a precise diff of what *would* change in DevOps, allowing the Agent to ask "User, do you approve these 5 new sub-tasks?" before committing.
+1. **FR8.1:** Frontends may include VS Code plugin, Dioxus/Tauri GUI, Vim/Emacs/JetBrains plugins.
+2. **FR8.2:** All frontends call CLI core for operations.
+3. **FR8.3:** Display unsynced changes, conflicts, time logged vs planned, hierarchy visualization.
 
-**Outcome:** The CLI becomes a tool *for* AI, enabling autonomous task management and breakdown.
+**Outcome:** Users gain convenience, visual hierarchy, and calendar integration without sacrificing CLI robustness.
 
 ---
 
