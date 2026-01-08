@@ -11,7 +11,7 @@ fn state_paths() -> Result<(PathBuf, PathBuf)> {
     Ok((state_dir.join("state.lock"), state_dir.join("state.json")))
 }
 
-pub fn start(id: u32, config: &Config, dry_run: bool) -> Result<()> {
+pub fn start(config: &Config, id: u32, dry_run: bool, schedule_focus: bool) -> Result<()> {
     let (lock_path, state_path) = state_paths()?;
 
     // 1. Fetch work item from DevOps to validate
@@ -50,10 +50,76 @@ pub fn start(id: u32, config: &Config, dry_run: bool) -> Result<()> {
         println!("[DRY-RUN] Would start timer for Task {}", id);
         None
     } else {
+        println!("Starting timer for Task {} - {}...", id, title);
         let timer = pace_client.start_timer(id, None)?;
         println!("✓ Timer started for Task {}", id);
         Some(timer.id)
     };
+
+    // 4. Schedule Focus Block if requested (FR3.7)
+    if schedule_focus {
+        if dry_run {
+            println!("[DRY-RUN] Would schedule Focus Block in calendar");
+        } else {
+            println!("📅 Scheduling Focus Block...");
+            
+            // Use async runtime for calendar operations
+            let runtime = tokio::runtime::Runtime::new()?;
+            let result = runtime.block_on(async {
+                let token_cache_path = home::home_dir()
+                    .context("Could not find home directory")?
+                    .join(".ao-no-out7ook")
+                    .join("tokens.json");
+
+                let auth = crate::graph::auth::GraphAuthenticator::new(
+                    config.graph.client_id.clone(),
+                    token_cache_path,
+                );
+                let client = crate::graph::client::GraphClient::new(auth);
+
+                // Get existing events for today
+                let now = chrono::Utc::now();
+                let end_of_day = now + chrono::Duration::hours(24);
+                let events = client.list_events(now, end_of_day).await?;
+
+                // Find next slot using smart scheduler
+                let duration = config.focus_blocks.duration_minutes;
+                let (slot_start, slot_end) = crate::graph::scheduler::find_next_slot(
+                    &events,
+                    now,
+                    duration,
+                    &config.work_hours,
+                )?;
+
+                // Create Focus Block event
+                let event = crate::graph::models::CalendarEvent {
+                    id: None,
+                    subject: format!("🎯 Focus: {} - {}", id, title),
+                    start: crate::graph::models::DateTimeTimeZone::from_utc(slot_start, "UTC"),
+                    end: crate::graph::models::DateTimeTimeZone::from_utc(slot_end, "UTC"),
+                    body: None,
+                    categories: vec!["Focus Block".to_string()],
+                    extended_properties: None, // TODO: Add work_item_id
+                };
+
+                client.create_event(event).await
+            });
+
+            match result {
+                Ok(created) => {
+                    println!(
+                        "✓ Focus Block created: {} to {}",
+                        created.start.date_time,
+                        created.end.date_time
+                    );
+                }
+                Err(e) => {
+                    println!("⚠ Warning: Could not create Focus Block: {}", e);
+                    println!("  Continuing with timer start...");
+                }
+            }
+        }
+    }
 
     // 4. Update State
     with_state_lock(&lock_path, &state_path, |state| {

@@ -21,6 +21,8 @@ enum Commands {
         id: u32,
         #[arg(long, help = "Preview without starting timer")]
         dry_run: bool,
+        #[arg(long, help = "Auto-schedule Focus Block in calendar")]
+        schedule_focus: bool,
     },
     /// Stop current task
     Stop {
@@ -175,15 +177,20 @@ fn main() -> Result<()> {
     });
 
     match &cli.command {
-        Commands::Start { id, dry_run } => {
-            commands::task::start(*id, &config, *dry_run)?;
+        Commands::Start {
+            id,
+            dry_run,
+            schedule_focus,
+        } => {
+            commands::task::start(&config, *id, *dry_run, *schedule_focus)?;
         }
         Commands::Stop { dry_run } => {
             commands::task::stop(*dry_run)?;
         }
         Commands::Switch { id } => {
             commands::task::stop(false)?;
-            commands::task::start(*id, &config, false)?;
+            // Switch doesn't auto-schedule Focus Block
+            commands::task::start(&config, *id, false, false)?;
         }
         Commands::Current => {
             commands::task::current()?;
