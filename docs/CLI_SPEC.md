@@ -2,8 +2,7 @@
 
 > **Complete command reference for the DevOps CLI tool (Phase 4).**
 >
-> **Note:** This specification uses `ano7` as the command alias. The actual binary is named `ao-no-out7ook`.
-> Recommended setup: `alias ano7=ao-no-out7ook`
+> **Note:** The CLI binary is named `ano7`.
 
 ---
 

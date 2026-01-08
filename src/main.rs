@@ -1,6 +1,6 @@
 use anyhow::Result;
-use ao_no_out7ook::commands;
-use ao_no_out7ook::config;
+use ano7::commands;
+use ano7::config;
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]

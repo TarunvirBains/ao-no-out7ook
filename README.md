@@ -49,14 +49,14 @@ A powerful Rust-based CLI for seamless integration between Azure DevOps, 7Pace T
 git clone https://github.com/yourusername/ao-no-out7ook.git
 cd ao-no-out7ook
 cargo build --release
-# Binary is at ./target/release/ao-no-out7ook
+# Binary is at ./target/release/ano7
 ```
 
-**Recommended Alias:**
-The documentation uses `ano7` as a shorthand. Set up this alias for easier usage:
+**Setup:**
+Add the binary to your PATH or create an alias:
 ```bash
 # Add to your .bashrc or .zshrc
-alias ano7='/path/to/ao-no-out7ook/target/release/ao-no-out7ook'
+alias ano7='/path/to/ao-no-out7ook/target/release/ano7'
 ```
 
 ---
