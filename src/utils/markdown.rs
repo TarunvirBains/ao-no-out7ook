@@ -70,11 +70,10 @@ pub fn to_markdown(item: &WorkItem) -> String {
     }
 
     // Tags
-    if let Some(tags) = item.get_tags() {
-        if !tags.is_empty() {
+    if let Some(tags) = item.get_tags()
+        && !tags.is_empty() {
             metadata.push(format!("**Tags:** {}", tags.join(", ")));
         }
-    }
 
     if !metadata.is_empty() {
         md.push_str(&format!("{}\n", metadata.join(" | ")));
@@ -209,7 +208,7 @@ pub fn validate_markdown_structure(content: &str) -> Result<Vec<ValidationError>
             _ => {
                 errors.push(ValidationError {
                     line: line_num,
-                    line_content: line_content,
+                    line_content,
                     message: format!("Unknown work item type: {}", item.work_item_type),
                     suggestion: Some("Use Epic, Feature, User Story, Task, or Bug".to_string()),
                     severity: Severity::Warning,
@@ -404,8 +403,8 @@ fn parse_metadata(
         }
 
         // Parse "**Key:** Value"
-        if let Some(start) = part.find("**") {
-            if let Some(end) = part[start + 2..].find("**") {
+        if let Some(start) = part.find("**")
+            && let Some(end) = part[start + 2..].find("**") {
                 let key = part[start + 2..start + 2 + end].trim();
                 let value = part[start + 2 + end + 2..].trim_start_matches(':').trim();
 
@@ -443,7 +442,6 @@ fn parse_metadata(
                     }
                 }
             }
-        }
     }
 
     Ok(())

@@ -1,7 +1,7 @@
 use crate::config::Config;
 use crate::devops::client::DevOpsClient;
 use crate::utils::markdown::{
-    display_validation_errors, from_markdown, to_markdown, validate_markdown_structure, Severity,
+    Severity, display_validation_errors, from_markdown, to_markdown, validate_markdown_structure,
 };
 use anyhow::{Context, Result};
 use std::path::Path;

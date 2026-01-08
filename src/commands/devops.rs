@@ -220,5 +220,7 @@ pub fn export(config: &Config, id: u32, output: Option<std::path::PathBuf>) -> R
 }
 
 pub fn import(_config: &Config, _file: std::path::PathBuf, _dry_run: bool) -> Result<()> {
-    anyhow::bail!("Import command temporarily disabled during Phase 4 refactor. Use 'task export' for now.")
+    anyhow::bail!(
+        "Import command temporarily disabled during Phase 4 refactor. Use 'task export' for now."
+    )
 }

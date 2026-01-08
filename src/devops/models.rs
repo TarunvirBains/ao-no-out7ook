@@ -86,7 +86,7 @@ impl WorkItem {
             .as_ref()?
             .iter()
             .find(|r| r.rel == "System.LinkTypes.Hierarchy-Reverse")
-            .and_then(|r| r.url.split('/').last())
+            .and_then(|r| r.url.split('/').next_back())
             .and_then(|id_str| id_str.parse().ok())
     }
 
