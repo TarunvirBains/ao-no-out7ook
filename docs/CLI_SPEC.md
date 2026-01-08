@@ -1,6 +1,9 @@
 # CLI Specification
 
 > **Complete command reference for the DevOps CLI tool (Phase 4).**
+>
+> **Note:** This specification uses `ano7` as the command alias. The actual binary is named `ao-no-out7ook`.
+> Recommended setup: `alias ano7=ao-no-out7ook`
 
 ---
 
@@ -18,7 +21,7 @@ All commands support these global flags:
 ## **Command Structure**
 
 ```
-task <COMMAND> [OPTIONS] [ARGS]
+ano7 <COMMAND> [OPTIONS] [ARGS]
 ```
 
 ---
@@ -40,8 +43,8 @@ Start working on a task. Optionally auto-schedules a Focus Block.
 
 **Examples:**
 ```bash
-task start 12345
-task start 12345 --schedule-focus
+ano7 start 12345
+ano7 start 12345 --schedule-focus
 ```
 
 ---
@@ -55,7 +58,7 @@ Stop current task and stop the active timer.
 
 **Examples:**
 ```bash
-task stop
+ano7 stop
 ```
 
 ---
@@ -69,7 +72,7 @@ Switch to a different task. Stops current task/timer and starts new one.
 
 **Examples:**
 ```bash
-task switch 67890
+ano7 switch 67890
 ```
 
 ---
@@ -80,7 +83,7 @@ Show currently active task and timer status.
 
 **Examples:**
 ```bash
-task current
+ano7 current
 ```
 
 ---
@@ -91,7 +94,7 @@ Check in after a Focus Block (interactive). Prompts to Continue, Blocked, or Com
 
 **Examples:**
 ```bash
-task checkin
+ano7 checkin
 ```
 
 ---
@@ -109,8 +112,8 @@ List work items with filtering.
 
 **Examples:**
 ```bash
-task list --state Active
-task list --assigned-to me
+ano7 list --state Active
+ano7 list --assigned-to me
 ```
 
 ---
@@ -124,7 +127,7 @@ Show detailed information about a work item.
 
 **Examples:**
 ```bash
-task show 12345
+ano7 show 12345
 ```
 
 ---
@@ -142,8 +145,8 @@ Update work item state.
 
 **Examples:**
 ```bash
-task state 12345 Active
-task state 12345 Resolved --dry-run
+ano7 state 12345 Active
+ano7 state 12345 Resolved --dry-run
 ```
 
 ---
@@ -161,8 +164,8 @@ Export work items to Markdown.
 
 **Examples:**
 ```bash
-task export --ids 123 -o work.md
-task export --ids 123 --hierarchy -o epic-tree.md
+ano7 export --ids 123 -o work.md
+ano7 export --ids 123 --hierarchy -o epic-tree.md
 ```
 
 #### `task import <FILE>`
@@ -179,10 +182,10 @@ Import work items from Markdown (creates or updates).
 
 **Examples:**
 ```bash
-task import work.md
-task import work.md --dry-run
-task import work.md --validate
-task import work.md --force
+ano7 import work.md
+ano7 import work.md --dry-run
+ano7 import work.md --validate
+ano7 import work.md --force
 ```
 
 ---
@@ -203,7 +206,7 @@ Manually log time to a work item.
 
 **Examples:**
 ```bash
-task log-time 12345 --hours 1.5 --comment "Code review"
+ano7 log-time 12345 --hours 1.5 --comment "Code review"
 ```
 
 #### `task worklogs`
@@ -215,8 +218,8 @@ Show recent worklogs.
 
 **Examples:**
 ```bash
-task worklogs
-task worklogs --days 14
+ano7 worklogs
+ano7 worklogs --days 14
 ```
 
 ---
@@ -233,8 +236,8 @@ Manage Microsoft Graph OAuth authentication.
 
 **Examples:**
 ```bash
-task oauth login
-task oauth status
+ano7 oauth login
+ano7 oauth status
 ```
 
 #### `task calendar <ACTION>`
@@ -253,9 +256,9 @@ Calendar operations.
 
 **Examples:**
 ```bash
-task calendar list
-task calendar schedule 12345 --duration 60
-task calendar delete "event-id-123"
+ano7 calendar list
+ano7 calendar schedule 12345 --duration 60
+ano7 calendar delete "event-id-123"
 ```
 
 ---
@@ -271,8 +274,8 @@ Output built-in manuals and workflows. This allows AI agents to "read the manual
 
 **Examples:**
 ```bash
-task doc
-task doc story-breakdown
+ano7 doc
+ano7 doc story-breakdown
 ```
 
 ---
@@ -290,9 +293,9 @@ Manage configuration.
 
 **Examples:**
 ```bash
-task config list
-task config set devops.organization "myorg"
-task config get work_hours.start
+ano7 config list
+ano7 config set devops.organization "myorg"
+ano7 config get work_hours.start
 ```
 
 ---
@@ -338,7 +341,7 @@ storage_path = "..."
 ## **Command Structure**
 
 ```
-task <COMMAND> [OPTIONS] [ARGS]
+ano7 <COMMAND> [OPTIONS] [ARGS]
 ```
 
 ---
@@ -361,9 +364,9 @@ Start working on a task. Creates Focus Block, starts 7Pace timer, sets as curren
 
 **Examples:**
 ```bash
-task start 12345
-task start 12345 --no-timer
-task start 12345 --duration 30
+ano7 start 12345
+ano7 start 12345 --no-timer
+ano7 start 12345 --duration 30
 ```
 
 **Output:**
@@ -384,8 +387,8 @@ Stop current task. Stops 7Pace timer, logs time.
 
 **Examples:**
 ```bash
-task stop
-task stop --no-log
+ano7 stop
+ano7 stop --no-log
 ```
 
 **Output:**
@@ -405,7 +408,7 @@ Switch to a different task. Stops current timer, starts new one.
 
 **Examples:**
 ```bash
-task switch 67890
+ano7 switch 67890
 ```
 
 **Output:**
@@ -425,8 +428,8 @@ Show currently active task.
 
 **Examples:**
 ```bash
-task current
-task current --json
+ano7 current
+ano7 current --json
 ```
 
 **Output:**
@@ -455,10 +458,10 @@ List work items with filtering and sorting.
 
 **Examples:**
 ```bash
-task list
-task list --state Active
-task list --assigned-to me --sort urgency
-task list --type "User Story" --limit 10
+ano7 list
+ano7 list --state Active
+ano7 list --assigned-to me --sort urgency
+ano7 list --type "User Story" --limit 10
 ```
 
 **Output:**
@@ -483,8 +486,8 @@ Show detailed information about a work item.
 
 **Examples:**
 ```bash
-task show 12345
-task show 12345 --json
+ano7 show 12345
+ano7 show 12345 --json
 ```
 
 **Output:**
@@ -518,9 +521,9 @@ View or update work item state.
 
 **Examples:**
 ```bash
-task state 12345               # Show valid transitions
-task state 12345 Active        # Update to Active
-task state 12345 Resolved      # Update to Resolved
+ano7 state 12345               # Show valid transitions
+ano7 state 12345 Active        # Update to Active
+ano7 state 12345 Resolved      # Update to Resolved
 ```
 
 **Output (no state provided):**
@@ -547,8 +550,8 @@ Sync local cache with Azure DevOps.
 
 **Examples:**
 ```bash
-task sync
-task sync --force
+ano7 sync
+ano7 sync --force
 ```
 
 **Output:**
@@ -574,9 +577,9 @@ Respond to Focus Block check-in (typically called by Outlook reminder).
 
 **Examples:**
 ```bash
-task checkin continue    # Create next Focus Block
-task checkin blocked     # Mark task as blocked, stop timer
-task checkin stop        # Stop working, log time
+ano7 checkin continue    # Create next Focus Block
+ano7 checkin blocked     # Mark task as blocked, stop timer
+ano7 checkin stop        # Stop working, log time
 ```
 
 **Output:**
@@ -594,7 +597,7 @@ Show all configuration values.
 
 **Examples:**
 ```bash
-task config list
+ano7 config list
 ```
 
 **Output:**
@@ -618,9 +621,9 @@ Set configuration value.
 
 **Examples:**
 ```bash
-task config set work_hours.start "09:00"
-task config set focus_blocks.duration_minutes 30
-task config set devops.organization "neworg"
+ano7 config set work_hours.start "09:00"
+ano7 config set focus_blocks.duration_minutes 30
+ano7 config set devops.organization "neworg"
 ```
 
 **Output:**
@@ -639,7 +642,7 @@ Get specific configuration value.
 
 **Examples:**
 ```bash
-task config get work_hours.start
+ano7 config get work_hours.start
 ```
 
 **Output:**
@@ -657,7 +660,7 @@ Authenticate with Microsoft Outlook (one-time setup).
 
 **Examples:**
 ```bash
-task auth outlook
+ano7 auth outlook
 ```
 
 **Output:**
@@ -686,8 +689,8 @@ Export current task context for AI assistants.
 
 **Examples:**
 ```bash
-task context --format llm
-task context --format json --include-children
+ano7 context --format llm
+ano7 context --format json --include-children
 ```
 
 **Output (llm format):**
@@ -716,9 +719,9 @@ Show DevOps schema for work item types.
 
 **Examples:**
 ```bash
-task schema
-task schema "User Story"
-task schema Bug
+ano7 schema
+ano7 schema "User Story"
+ano7 schema Bug
 ```
 
 **Output:**
@@ -757,8 +760,8 @@ Bulk create child work items from JSON file (typically AI-generated).
 
 **Examples:**
 ```bash
-task decompose --input tasks.json --parent 12345 --dry-run
-task decompose --input tasks.json --parent 12345
+ano7 decompose --input tasks.json --parent 12345 --dry-run
+ano7 decompose --input tasks.json --parent 12345
 ```
 
 **Input File Format (tasks.json):**
@@ -876,7 +879,7 @@ RUST_LOG                # Set log level (error, warn, info, debug, trace)
 ```bash
 export DEVOPS_PAT="your-pat-here"
 export RUST_LOG=debug
-task start 12345
+ano7 start 12345
 ```
 
 ---
@@ -887,13 +890,13 @@ task start 12345
 
 ```bash
 # Verify PAT is set correctly
-task config get devops.pat
+ano7 config get devops.pat
 
 # Re-set PAT
-task config set devops.pat "new-pat"
+ano7 config set devops.pat "new-pat"
 
 # For Outlook auth issues
-task auth outlook  # Re-authenticate
+ano7 auth outlook  # Re-authenticate
 ```
 
 ### **"State file locked" error**
@@ -909,10 +912,10 @@ Task was inactive for more than `task_expiry_hours` (default: 24h). This is expe
 
 ```bash
 # Check current task
-task current
+ano7 current
 
 # Start a new task
-task start <ID>
+ano7 start <ID>
 ```
 
 ---
@@ -947,6 +950,6 @@ fi
 Most commands support `--json` for machine-readable output:
 
 ```bash
-task list --state Active --json | jq '.[] | select(.priority == 1)'
-task current --json | jq -r '.title'
+ano7 list --state Active --json | jq '.[] | select(.priority == 1)'
+ano7 current --json | jq -r '.title'
 ```

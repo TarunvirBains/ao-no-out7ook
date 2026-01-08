@@ -4,7 +4,7 @@ use ao_no_out7ook::config;
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "task")]
+#[command(name = "ano7")]
 #[command(about = "SevenPace & Outlook Integration for DevOps")]
 #[command(version)]
 struct Cli {

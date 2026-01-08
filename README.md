@@ -53,10 +53,10 @@ cargo build --release
 ```
 
 **Recommended Alias:**
-The documentation uses `task` as a shorthand. Set up this alias for easier usage:
+The documentation uses `ano7` as a shorthand. Set up this alias for easier usage:
 ```bash
 # Add to your .bashrc or .zshrc
-alias task='/path/to/ao-no-out7ook/target/release/ao-no-out7ook'
+alias ano7='/path/to/ao-no-out7ook/target/release/ao-no-out7ook'
 ```
 
 ---
@@ -66,27 +66,27 @@ alias task='/path/to/ao-no-out7ook/target/release/ao-no-out7ook'
 ### **Self-Documentation (For AI Agents)**
 ```bash
 # Get embedded workflows and SOPs
-task doc story-breakdown
+ano7 doc story-breakdown
 ```
 
 ### **Start Working on a Task**
 ```bash
-task config set devops.organization "myorg"
-task config set devops.project "MyProject"
-task config set devops.pat "your-pat-here"
+ano7 config set devops.organization "myorg"
+ano7 config set devops.project "MyProject"
+ano7 config set devops.pat "your-pat-here"
 ```
 
 2. **Authenticate Outlook (one-time):**
 ```bash
-task auth outlook
+ano7 auth outlook
 # Follow the prompts to authenticate via device code flow
 ```
 
 3. **Configure Work Hours:**
 ```bash
-task config set work_hours.start "08:30"
-task config set work_hours.end "17:00"
-task config set work_hours.timezone "America/Los_Angeles"
+ano7 config set work_hours.start "08:30"
+ano7 config set work_hours.end "17:00"
+ano7 config set work_hours.timezone "America/Los_Angeles"
 ```
 
 ---
@@ -96,7 +96,7 @@ task config set work_hours.timezone "America/Los_Angeles"
 ### **Start Working on a Task**
 ```bash
 # Start task, create Focus Block, start 7Pace timer
-task start 12345
+ano7 start 12345
 
 # Output:
 # ✓ Timer started for Task 12345
@@ -106,7 +106,7 @@ task start 12345
 
 ### **Check Current Task**
 ```bash
-task current
+ano7 current
 
 # Output:
 # 🎯 Task 12345: Implement login feature
@@ -116,20 +116,20 @@ task current
 
 ### **Switch Tasks**
 ```bash
-task switch 67890
+ano7 switch 67890
 # Stops timer on 12345, starts timer on 67890
 ```
 
 ### **List Work Items**
 ```bash
-task list --state Active
-task list --assigned-to me --sort urgency
+ano7 list --state Active
+ano7 list --assigned-to me --sort urgency
 ```
 
 ### **Update Work Item State**
 ```bash
-task state 12345 Active   # Move to Active
-task state 12345          # Show valid transitions
+ano7 state 12345 Active   # Move to Active
+ano7 state 12345          # Show valid transitions
 ```
 
 ---
@@ -145,13 +145,13 @@ After your Focus Block ends, Outlook will prompt:
 ### **AI Agent Integration**
 ```bash
 # Export context for AI assistant
-task context --format llm
+ano7 context --format llm
 
 # Bulk create sub-tasks from AI-generated JSON
-task decompose --input ai_tasks.json
+ano7 decompose --input ai_tasks.json
 
 # Show DevOps schema for current work item type
-task schema
+ano7 schema
 ```
 
 ---
