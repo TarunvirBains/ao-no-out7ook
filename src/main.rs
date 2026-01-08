@@ -54,6 +54,8 @@ enum Commands {
         id: u32,
         #[arg(help = "New state (target)")]
         new_state: Option<String>,
+        #[arg(long, help = "Preview changes without applying")]
+        dry_run: bool,
     },
     /// Export work item to Markdown
     Export {
@@ -67,6 +69,8 @@ enum Commands {
     Import {
         #[arg(help = "Input file path")]
         file: std::path::PathBuf,
+        #[arg(long, help = "Preview changes without applying")]
+        dry_run: bool,
     },
 }
 
@@ -124,14 +128,18 @@ fn main() -> Result<()> {
         Commands::Show { id } => {
             commands::devops::show(&config, *id)?;
         }
-        Commands::State { id, new_state } => {
-            commands::devops::state(&config, *id, new_state.clone())?;
+        Commands::State {
+            id,
+            new_state,
+            dry_run,
+        } => {
+            commands::devops::state(&config, *id, new_state.clone(), *dry_run)?;
         }
         Commands::Export { id, output } => {
             commands::devops::export(&config, *id, output.clone())?;
         }
-        Commands::Import { file } => {
-            commands::devops::import(&config, file.clone())?;
+        Commands::Import { file, dry_run } => {
+            commands::devops::import(&config, file.clone(), *dry_run)?;
         }
     }
 

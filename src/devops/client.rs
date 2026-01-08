@@ -88,20 +88,24 @@ impl DevOpsClient {
         if ids.is_empty() {
             return Ok(Vec::new());
         }
-        let ids_str = ids
-            .iter()
-            .map(|id| id.to_string())
-            .collect::<Vec<_>>()
-            .join(",");
+
+        // Use POST /wit/workitemsbatch per Azure DevOps API spec
         let url = format!(
-            "{}/{}/_apis/wit/workitems?ids={}&$expand=all&api-version=7.0",
-            self.base_url, self.project, ids_str
+            "{}/{}/_apis/wit/workitemsbatch?api-version=7.0",
+            self.base_url, self.project
         );
+
+        let body = serde_json::json!({
+            "ids": ids,
+            "$expand": "all"
+        });
 
         let response = self
             .client
-            .get(&url)
+            .post(&url)
             .header("Authorization", self.auth_header())
+            .header("Content-Type", "application/json")
+            .json(&body)
             .send()
             .context("Failed to batch fetch work items")?;
 
@@ -153,6 +157,27 @@ impl DevOpsClient {
         id: u32,
         operations: Vec<serde_json::Value>,
     ) -> Result<WorkItem> {
+        self.update_work_item_with_rev(id, operations, None)
+    }
+
+    pub fn update_work_item_with_rev(
+        &self,
+        id: u32,
+        operations: Vec<serde_json::Value>,
+        expected_rev: Option<u32>,
+    ) -> Result<WorkItem> {
+        // If expected_rev provided, verify current revision matches (FR1.8 conflict detection)
+        if let Some(expected) = expected_rev {
+            let current = self.get_work_item(id)?;
+            if current.rev != expected {
+                anyhow::bail!(
+                    "Conflict detected: Work item {} has been modified (expected rev {}, current rev {}). \
+                     Fetch latest and retry.",
+                    id, expected, current.rev
+                );
+            }
+        }
+
         let url = format!(
             "{}/{}/_apis/wit/workitems/{}?api-version=7.0",
             self.base_url, self.project, id
