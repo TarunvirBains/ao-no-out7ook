@@ -1,3 +1,4 @@
+pub mod agent;
 pub mod calendar;
 pub mod checkin;
 pub mod config;
