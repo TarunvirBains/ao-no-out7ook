@@ -11,32 +11,106 @@ use std::collections::HashMap;
 // ---
 // Description...
 
+/// Generate Markdown for a work item (FR4.1 - Enhanced)
+/// Supports both simple frontmatter and hierarchical header formats
 pub fn to_markdown(item: &WorkItem) -> String {
-    let title = item.get_title().unwrap_or("");
-    let state = item.get_state().unwrap_or("");
-    let assigned = item.get_assigned_to().unwrap_or("");
+    // Enhanced format: Use headers for hierarchy
+    let mut md = String::new();
+
+    // Determine work item type and header level
+    let work_item_type = item
+        .get_work_item_type()
+        .unwrap_or_else(|| "Work Item".to_string());
+    let header_level = match work_item_type.as_str() {
+        "Epic" => "#",
+        "Feature" => "##",
+        "User Story" => "###",
+        "Task" | "Bug" => "####",
+        _ => "###", // Default to User Story level
+    };
+
+    // Title line: "# Epic: Title (#ID)"
+    let title = item.get_title().unwrap_or("Untitled");
     let id = item.id;
+    md.push_str(&format!(
+        "{} {}: {} (#{})\n",
+        header_level, work_item_type, title, id
+    ));
 
-    // Frontmatter
-    let mut out = String::new();
-    out.push_str("---\n");
-    out.push_str(&format!("id: {}\n", id));
-    out.push_str(&format!("title: {}\n", title));
-    out.push_str(&format!("state: {}\n", state));
-    out.push_str(&format!("assigned_to: {}\n", assigned));
-    // Could add relations here too
-    out.push_str("---\n\n");
+    // Metadata line
+    let mut metadata = Vec::new();
 
-    // Body (Description)
+    if let Some(state) = item.get_state() {
+        metadata.push(format!("**State:** {}", state));
+    }
+
+    if let Some(assigned_to) = item.get_assigned_to() {
+        metadata.push(format!("**Assigned:** {}", assigned_to));
+    }
+
+    if let Some(priority) = item
+        .fields
+        .get("Microsoft.VSTS.Common.Priority")
+        .and_then(|v| v.as_i64())
+    {
+        metadata.push(format!("**Priority:** {}", priority));
+    }
+
+    // Parent reference
+    if let Some(parent_id) = item.get_parent_id() {
+        metadata.push(format!("**Parent:** #{}", parent_id));
+    }
+
+    // Effort/work
+    if let Some(effort) = item
+        .fields
+        .get("Microsoft.VSTS.Scheduling.Effort")
+        .and_then(|v| v.as_f64())
+    {
+        metadata.push(format!("**Effort:** {}h", effort));
+    }
+
+    // Tags
+    if let Some(tags) = item.get_tags() {
+        if !tags.is_empty() {
+            metadata.push(format!("**Tags:** {}", tags.join(", ")));
+        }
+    }
+
+    if !metadata.is_empty() {
+        md.push_str(&format!("{}\n", metadata.join(" | ")));
+    }
+
+    // Description (if exists)
+    md.push('\n');
     if let Some(desc) = item
         .fields
         .get("System.Description")
         .and_then(|v| v.as_str())
     {
-        out.push_str(desc);
+        let cleaned_desc = strip_html_tags(desc);
+        md.push_str(&cleaned_desc);
+        md.push('\n');
     }
 
-    out
+    md
+}
+
+/// Strip HTML tags from description (simple implementation)
+fn strip_html_tags(html: &str) -> String {
+    let mut result = String::new();
+    let mut in_tag = false;
+
+    for c in html.chars() {
+        match c {
+            '<' => in_tag = true,
+            '>' => in_tag = false,
+            _ if !in_tag => result.push(c),
+            _ => {}
+        }
+    }
+
+    result.trim().to_string()
 }
 
 pub struct ParsedWorkItem {

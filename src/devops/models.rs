@@ -76,6 +76,38 @@ impl WorkItem {
             .get("System.WorkItemType")
             .and_then(|v| v.as_str())
     }
+
+    pub fn get_work_item_type(&self) -> Option<String> {
+        self.get_type().map(|s| s.to_string())
+    }
+
+    pub fn get_parent_id(&self) -> Option<u32> {
+        self.relations
+            .as_ref()?
+            .iter()
+            .find(|r| r.rel == "System.LinkTypes.Hierarchy-Reverse")
+            .and_then(|r| r.url.split('/').last())
+            .and_then(|id_str| id_str.parse().ok())
+    }
+
+    pub fn get_tags(&self) -> Option<Vec<String>> {
+        self.fields
+            .get("System.Tags")
+            .and_then(|v| v.as_str())
+            .map(|tags_str| {
+                tags_str
+                    .split(';')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect()
+            })
+    }
+
+    pub fn get_description(&self) -> Option<&str> {
+        self.fields
+            .get("System.Description")
+            .and_then(|v| v.as_str())
+    }
 }
 
 #[cfg(test)]
