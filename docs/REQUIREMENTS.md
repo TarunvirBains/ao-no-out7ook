@@ -87,7 +87,17 @@
      * User Story: Must have Feature or Epic parent
      * Task/Bug: Must have User Story or Feature parent
    - Validate parent exists in DevOps before import
-   - Error reporting with line numbers
+   - **Error reporting format:**
+     * Line number where error occurred
+     * Actual line content from markdown file
+     * Clear error message explaining the problem
+     * Suggested fix when applicable
+   - **Example error output:**
+     ```
+     ❌ Line 12: ### User Story: Add login (#100)
+         Error: User Story must have a parent (Feature or Epic)
+         Suggestion: Add **Parent:** #<ID> to the metadata line
+     ```
 4. **FR4.4:** Versioning support via Git or local history.
 5. **FR4.5:** Optional: update calendar blocks based on Markdown edits.
 
