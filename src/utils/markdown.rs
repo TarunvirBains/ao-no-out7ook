@@ -166,3 +166,127 @@ pub fn from_markdown(content: &str) -> Result<ParsedWorkItem> {
         description: body.to_string(),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::devops::models::WorkItemRelation;
+    use serde_json::json;
+
+    fn create_test_work_item(work_item_type: &str, id: u32) -> WorkItem {
+        let fields_map = json!({
+            "System.WorkItemType": work_item_type,
+            "System.Title": format!("Test {}", work_item_type),
+            "System.State": "Active",
+        });
+
+        WorkItem {
+            id,
+            rev: 1,
+            url: format!("https://dev.azure.com/test/_apis/wit/workItems/{}", id),
+            fields: fields_map
+                .as_object()
+                .unwrap()
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect(),
+            relations: None,
+        }
+    }
+
+    #[test]
+    fn test_markdown_epic_header() {
+        let item = create_test_work_item("Epic", 456);
+        let md = to_markdown(&item);
+
+        assert!(md.starts_with("# Epic: Test Epic (#456)"));
+        assert!(md.contains("**State:** Active"));
+    }
+
+    #[test]
+    fn test_markdown_feature_header() {
+        let item = create_test_work_item("Feature", 123);
+        let md = to_markdown(&item);
+
+        assert!(md.starts_with("## Feature: Test Feature (#123)"));
+    }
+
+    #[test]
+    fn test_markdown_user_story_header() {
+        let item = create_test_work_item("User Story", 789);
+        let md = to_markdown(&item);
+
+        assert!(md.starts_with("### User Story: Test User Story (#789)"));
+    }
+
+    #[test]
+    fn test_markdown_task_header() {
+        let item = create_test_work_item("Task", 101);
+        let md = to_markdown(&item);
+
+        assert!(md.starts_with("#### Task: Test Task (#101)"));
+    }
+
+    #[test]
+    fn test_markdown_with_metadata() {
+        let mut item = create_test_work_item("User Story", 200);
+        item.fields.insert(
+            "System.AssignedTo".to_string(),
+            json!({"displayName": "John Doe"}),
+        );
+        item.fields
+            .insert("Microsoft.VSTS.Common.Priority".to_string(), json!(1));
+        item.fields
+            .insert("Microsoft.VSTS.Scheduling.Effort".to_string(), json!(5.0));
+        item.fields
+            .insert("System.Tags".to_string(), json!("frontend; ux; important"));
+
+        let md = to_markdown(&item);
+
+        assert!(md.contains("**State:** Active"));
+        assert!(md.contains("**Assigned:** John Doe"));
+        assert!(md.contains("**Priority:** 1"));
+        assert!(md.contains("**Effort:** 5h"));
+        assert!(md.contains("**Tags:** frontend, ux, important"));
+    }
+
+    #[test]
+    fn test_markdown_with_parent() {
+        let mut item = create_test_work_item("User Story", 300);
+        item.relations = Some(vec![WorkItemRelation {
+            rel: "System.LinkTypes.Hierarchy-Reverse".to_string(),
+            url: "https://dev.azure.com/test/_apis/wit/workItems/250".to_string(),
+            attributes: None,
+        }]);
+
+        let md = to_markdown(&item);
+
+        assert!(md.contains("**Parent:** #250"));
+    }
+
+    #[test]
+    fn test_markdown_with_description() {
+        let mut item = create_test_work_item("Task", 400);
+        item.fields.insert(
+            "System.Description".to_string(),
+            json!("<p>This is a <strong>test</strong> description</p>"),
+        );
+
+        let md = to_markdown(&item);
+
+        assert!(md.contains("This is a test description"));
+        assert!(!md.contains("<p>"));
+        assert!(!md.contains("<strong>"));
+    }
+
+    #[test]
+    fn test_strip_html_tags() {
+        assert_eq!(strip_html_tags("<p>Hello</p>"), "Hello");
+        assert_eq!(strip_html_tags("<div><span>Test</span></div>"), "Test");
+        assert_eq!(strip_html_tags("Plain text"), "Plain text");
+        assert_eq!(
+            strip_html_tags("<p>Multi <strong>word</strong> text</p>"),
+            "Multi word text"
+        );
+    }
+}
