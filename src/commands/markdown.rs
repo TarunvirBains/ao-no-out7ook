@@ -90,15 +90,22 @@ pub fn import(
                     .get("System.State")
                     .map(|s| s.as_str())
                     .unwrap_or("");
-                let is_closed = matches!(
-                    state.to_lowercase().as_str(),
-                    "completed" | "resolved" | "closed" | "removed"
-                );
+                let state_lower = state.to_lowercase();
+
+                // Check against configured skip states (case-insensitive)
+                let is_closed = config
+                    .devops
+                    .skip_states
+                    .iter()
+                    .any(|skip_state| skip_state.to_lowercase() == state_lower);
+
                 if is_closed {
                     println!(
-                        "⊘ Skipping closed item: {} #{} (use --force to import)",
+                        "⊘ Skipping {} item: {} #{} (state: {}) (use --force to import)",
                         item.work_item_type,
-                        item.id.unwrap_or(0)
+                        item.title,
+                        item.id.unwrap_or(0),
+                        state
                     );
                 }
                 !is_closed

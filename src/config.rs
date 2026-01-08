@@ -17,11 +17,34 @@ pub struct Config {
     pub state: StateConfig,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DevOpsConfig {
+    pub pat: Option<String>, // Can be optional if loading from env/keyring
     pub organization: String,
     pub project: String,
-    pub pat: Option<String>, // Can be optional if loading from env/keyring
+    /// States to skip during markdown import (case-insensitive)
+    #[serde(default = "default_skip_states")]
+    pub skip_states: Vec<String>,
+}
+
+fn default_skip_states() -> Vec<String> {
+    vec![
+        "Completed".to_string(),
+        "Resolved".to_string(),
+        "Closed".to_string(),
+        "Removed".to_string(),
+    ]
+}
+
+impl Default for DevOpsConfig {
+    fn default() -> Self {
+        Self {
+            pat: None,
+            organization: String::new(),
+            project: String::new(),
+            skip_states: default_skip_states(),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
