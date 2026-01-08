@@ -72,8 +72,22 @@
 **Goal:** Allow developers to edit work items in a Git-friendly, human-readable format.
 
 1. **FR4.1:** Generate Markdown for selected work items with hierarchy and key fields.
+   - Hierarchical format using headers (# Epic, ## Feature, ### Story, #### Task)
+   - Metadata as inline bullets (State, Assigned, Priority, Parent, Effort, Tags)
+   - HTML tag stripping for clean descriptions
 2. **FR4.2:** Parse Markdown back to JSON with validation.
+   - Support creating new work items (ID=#0 or omitted)
+   - **State Filtering:** Import skips Completed/Resolved/Closed/Removed items by default
+   - `--force` flag to override and import all items
+   - Export includes ALL items (full state snapshot)
 3. **FR4.3:** Highlight errors, missing fields, or malformed hierarchy.
+   - **Hierarchy Validation:** Enforce parent-child relationships:
+     * Epic: No parent required (standalone OK)
+     * Feature: Must have Epic parent
+     * User Story: Must have Feature or Epic parent
+     * Task/Bug: Must have User Story or Feature parent
+   - Validate parent exists in DevOps before import
+   - Error reporting with line numbers
 4. **FR4.4:** Versioning support via Git or local history.
 5. **FR4.5:** Optional: update calendar blocks based on Markdown edits.
 
