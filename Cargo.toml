@@ -1,0 +1,24 @@
+[package]
+name = "ao-no-out7ook"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.100"
+base64 = "0.22.1"
+chrono = { version = "0.4.42", features = ["serde"] }
+clap = { version = "4.5.54", features = ["derive", "env"] }
+config = "0.15.19"
+fs2 = "0.4.3"
+home = "0.5.12"
+keyring = "3.6.3"
+reqwest = { version = "0.13.1", features = ["json", "blocking"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+thiserror = "2.0.17"
+toml = "0.9.10"
+
+[dev-dependencies]
+tempfile = "3.24.0"
+tokio = { version = "1.49.0", features = ["full"] }
+wiremock = "0.6.5"
