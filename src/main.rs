@@ -65,20 +65,30 @@ enum Commands {
         #[arg(long, help = "Preview changes without applying")]
         dry_run: bool,
     },
-    /// Export work item to Markdown
+    /// Export work items to Markdown (Phase 4)
     Export {
-        #[arg(help = "Work Item ID")]
-        id: u32,
-        #[arg(long, help = "Output file path")]
-        output: Option<std::path::PathBuf>,
+        #[arg(
+            long,
+            help = "Work item IDs to export (comma-separated)",
+            value_delimiter = ','
+        )]
+        ids: Vec<u32>,
+        #[arg(long, help = "Export entire hierarchy")]
+        hierarchy: bool,
+        #[arg(short, long, help = "Output file path")]
+        output: std::path::PathBuf,
     },
 
-    /// Import work item from Markdown
+    /// Import work items from Markdown (Phase 4)
     Import {
-        #[arg(help = "Input file path")]
+        #[arg(help = "Input markdown file path")]
         file: std::path::PathBuf,
         #[arg(long, help = "Preview changes without applying")]
         dry_run: bool,
+        #[arg(long, help = "Validate only, don't import")]
+        validate: bool,
+        #[arg(long, help = "Force import of completed/closed items")]
+        force: bool,
     },
 
     /// Manually log time to a work item
@@ -221,11 +231,20 @@ fn main() -> Result<()> {
         } => {
             commands::devops::state(&config, *id, new_state.clone(), *dry_run)?;
         }
-        Commands::Export { id, output } => {
-            commands::devops::export(&config, *id, output.clone())?;
+        Commands::Export {
+            ids,
+            hierarchy,
+            output,
+        } => {
+            commands::markdown::export(&config, ids.clone(), *hierarchy, output)?;
         }
-        Commands::Import { file, dry_run } => {
-            commands::devops::import(&config, file.clone(), *dry_run)?;
+        Commands::Import {
+            file,
+            dry_run,
+            validate,
+            force,
+        } => {
+            commands::markdown::import(&config, file, *dry_run, *validate, *force)?;
         }
         Commands::LogTime {
             id,
