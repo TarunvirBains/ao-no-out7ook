@@ -66,7 +66,7 @@ mod tests {
 
     #[test]
     fn test_retry_exhausts_attempts() {
-        let result = with_retry(|| anyhow::bail!("Always fails"), 2);
+        let result: Result<i32> = with_retry(|| anyhow::bail!("Always fails"), 2);
         assert!(result.is_err());
     }
 }

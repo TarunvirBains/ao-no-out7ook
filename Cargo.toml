@@ -4,21 +4,23 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-anyhow = "1.0.100"
-base64 = "0.22.1"
-chrono = { version = "0.4.42", features = ["serde"] }
-clap = { version = "4.5.54", features = ["derive", "env"] }
-config = "0.15.19"
-fs2 = "0.4.3"
-home = "0.5.12"
-keyring = "3.6.3"
-pulldown-cmark = "0.13.0"
-reqwest = { version = "0.13.1", features = ["json", "blocking"] }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-termtree = "0.5.1"
-thiserror = "2.0.17"
-toml = "0.9.10"
+anyhow = "1"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive"] }
+config = "0.14"
+fs2 = "0.4"
+home = "0.5"
+keyring = "3"
+oauth2 = "4"
+pulldown-cmark = "0.12"
+reqwest = { version = "0.11", features = ["json", "blocking"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+termtree = "0.5"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+toml = "0.8"
 
 [dev-dependencies]
 tempfile = "3.24.0"
