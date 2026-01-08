@@ -71,9 +71,10 @@ pub fn to_markdown(item: &WorkItem) -> String {
 
     // Tags
     if let Some(tags) = item.get_tags()
-        && !tags.is_empty() {
-            metadata.push(format!("**Tags:** {}", tags.join(", ")));
-        }
+        && !tags.is_empty()
+    {
+        metadata.push(format!("**Tags:** {}", tags.join(", ")));
+    }
 
     if !metadata.is_empty() {
         md.push_str(&format!("{}\n", metadata.join(" | ")));
@@ -302,20 +303,21 @@ fn parse_work_item(lines: &[&str], _start_line: usize) -> Result<(ParsedWorkItem
             consumed += 1;
 
             // Collect description (lines after metadata until next header or separator)
-            let mut desc_lines = Vec::new();
-            for j in consumed..lines.len() {
-                let line = lines[j].trim();
-                if line.starts_with('#') || line.starts_with("---") {
+            let remaining_lines = &lines[consumed..];
+            let mut desc_count = 0;
+            for line in remaining_lines {
+                let trimmed = line.trim();
+                if trimmed.starts_with('#') || trimmed.starts_with("---") {
                     break;
                 }
-                if !line.is_empty() {
-                    desc_lines.push(line);
+                if !trimmed.is_empty() {
+                    description.push_str(trimmed);
+                    description.push('\n');
                 }
-                consumed += 1;
+                desc_count += 1;
             }
-            if !desc_lines.is_empty() {
-                description = desc_lines.join("\n");
-            }
+            consumed += desc_count;
+            description = description.trim().to_string();
         }
     }
 
@@ -404,44 +406,45 @@ fn parse_metadata(
 
         // Parse "**Key:** Value"
         if let Some(start) = part.find("**")
-            && let Some(end) = part[start + 2..].find("**") {
-                let key = part[start + 2..start + 2 + end].trim();
-                let value = part[start + 2 + end + 2..].trim_start_matches(':').trim();
+            && let Some(end) = part[start + 2..].find("**")
+        {
+            let key = part[start + 2..start + 2 + end].trim();
+            let value = part[start + 2 + end + 2..].trim_start_matches(':').trim();
 
-                match key {
-                    "State" => {
-                        fields.insert("System.State".to_string(), value.to_string());
-                    }
-                    "Assigned" => {
-                        fields.insert("System.AssignedTo".to_string(), value.to_string());
-                    }
-                    "Priority" => {
-                        fields.insert(
-                            "Microsoft.VSTS.Common.Priority".to_string(),
-                            value.to_string(),
-                        );
-                    }
-                    "Effort" => {
-                        let effort_val = value.trim_end_matches('h');
-                        fields.insert(
-                            "Microsoft.VSTS.Scheduling.Effort".to_string(),
-                            effort_val.to_string(),
-                        );
-                    }
-                    "Tags" => {
-                        fields.insert("System.Tags".to_string(), value.replace(", ", ";"));
-                    }
-                    "Parent" => {
-                        if let Some(id_str) = value.strip_prefix('#') {
-                            *parent_id = id_str.parse().ok();
-                        }
-                    }
-                    _ => {
-                        // Store unknown fields as-is
-                        fields.insert(key.to_string(), value.to_string());
+            match key {
+                "State" => {
+                    fields.insert("System.State".to_string(), value.to_string());
+                }
+                "Assigned" => {
+                    fields.insert("System.AssignedTo".to_string(), value.to_string());
+                }
+                "Priority" => {
+                    fields.insert(
+                        "Microsoft.VSTS.Common.Priority".to_string(),
+                        value.to_string(),
+                    );
+                }
+                "Effort" => {
+                    let effort_val = value.trim_end_matches('h');
+                    fields.insert(
+                        "Microsoft.VSTS.Scheduling.Effort".to_string(),
+                        effort_val.to_string(),
+                    );
+                }
+                "Tags" => {
+                    fields.insert("System.Tags".to_string(), value.replace(", ", ";"));
+                }
+                "Parent" => {
+                    if let Some(id_str) = value.strip_prefix('#') {
+                        *parent_id = id_str.parse().ok();
                     }
                 }
+                _ => {
+                    // Store unknown fields as-is
+                    fields.insert(key.to_string(), value.to_string());
+                }
             }
+        }
     }
 
     Ok(())
