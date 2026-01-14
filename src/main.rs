@@ -203,6 +203,8 @@ enum CalendarAction {
         duration: u32,
         #[arg(long, help = "Custom title (defaults to work item title)")]
         title: Option<String>,
+        #[arg(long, help = "Preview event without creating")]
+        dry_run: bool,
     },
     /// Delete calendar event
     Delete {
@@ -338,6 +340,7 @@ fn main() -> Result<()> {
                 start,
                 duration,
                 title,
+                dry_run,
             } => {
                 tokio::runtime::Runtime::new()?.block_on(commands::calendar::calendar_schedule(
                     &config,
@@ -345,6 +348,7 @@ fn main() -> Result<()> {
                     start.clone(),
                     *duration,
                     title.clone(),
+                    *dry_run,
                 ))?;
             }
             CalendarAction::Delete { event_id } => {

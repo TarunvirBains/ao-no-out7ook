@@ -135,6 +135,7 @@ pub async fn calendar_schedule(
     start_time: Option<String>,
     duration_mins: u32,
     custom_title: Option<String>,
+    dry_run: bool,
 ) -> Result<()> {
     let token_cache_path = home_dir()
         .context("Could not find home directory")?
@@ -170,7 +171,7 @@ pub async fn calendar_schedule(
 
     let event = CalendarEvent {
         id: None,
-        subject,
+        subject: subject.clone(),
         start: DateTimeTimeZone::from_utc(start, "UTC"),
         end: DateTimeTimeZone::from_utc(end, "UTC"),
         body: None,
@@ -178,13 +179,22 @@ pub async fn calendar_schedule(
         extended_properties: None, // TODO: Add work_item_id
     };
 
-    let created = client.create_event(event).await?;
+    if dry_run {
+        println!("--- DRY RUN: Calendar Schedule Preview ---");
+        println!("  Subject: {}", subject);
+        println!("  Start: {}", event.start.date_time);
+        println!("  End: {}", event.end.date_time);
+        println!("  Duration: {} minutes", duration_mins);
+        println!("✓ [DRY RUN] Would create focus block");
+    } else {
+        let created = client.create_event(event).await?;
 
-    println!("✓ Focus Block scheduled");
-    println!("  Event ID: {}", created.id.as_deref().unwrap_or("N/A"));
-    println!("  Subject: {}", created.subject);
-    println!("  Start: {}", created.start.date_time);
-    println!("  End: {}", created.end.date_time);
+        println!("✓ Focus Block scheduled");
+        println!("  Event ID: {}", created.id.as_deref().unwrap_or("N/A"));
+        println!("  Subject: {}", created.subject);
+        println!("  Start: {}", created.start.date_time);
+        println!("  End: {}", created.end.date_time);
+    }
 
     Ok(())
 }
