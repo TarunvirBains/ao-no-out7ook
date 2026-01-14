@@ -11,6 +11,9 @@ pub struct State {
     pub current_task: Option<CurrentTask>,
     pub last_sync: SyncTimestamps,
     pub work_hours: WorkHoursState,
+    /// FR3.3: Mapping between work items and calendar events
+    #[serde(default)]
+    pub calendar_mappings: Vec<CalendarMapping>,
 }
 
 impl Default for State {
@@ -20,8 +23,19 @@ impl Default for State {
             current_task: None,
             last_sync: SyncTimestamps::default(),
             work_hours: WorkHoursState::default(),
+            calendar_mappings: Vec::new(),
         }
     }
+}
+
+/// FR3.3: Represents a link between a DevOps work item and a calendar event
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct CalendarMapping {
+    pub work_item_id: u32,
+    pub event_id: String,
+    pub created_at: DateTime<Utc>,
+    #[serde(default)]
+    pub last_synced: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -78,6 +92,51 @@ impl State {
         fs::rename(&temp_path, path)?;
 
         Ok(())
+    }
+
+    // --- FR3.3: Calendar Mapping Operations ---
+
+    /// Add or update a mapping between a work item and calendar event
+    pub fn upsert_calendar_mapping(&mut self, work_item_id: u32, event_id: String) {
+        let now = Utc::now();
+
+        // Check if mapping already exists
+        if let Some(existing) = self
+            .calendar_mappings
+            .iter_mut()
+            .find(|m| m.work_item_id == work_item_id)
+        {
+            existing.event_id = event_id;
+            existing.last_synced = Some(now);
+        } else {
+            self.calendar_mappings.push(CalendarMapping {
+                work_item_id,
+                event_id,
+                created_at: now,
+                last_synced: None,
+            });
+        }
+    }
+
+    /// Get the calendar event ID for a work item, if mapped
+    pub fn get_calendar_event(&self, work_item_id: u32) -> Option<&str> {
+        self.calendar_mappings
+            .iter()
+            .find(|m| m.work_item_id == work_item_id)
+            .map(|m| m.event_id.as_str())
+    }
+
+    /// Remove a calendar mapping for a work item
+    pub fn remove_calendar_mapping(&mut self, work_item_id: u32) -> bool {
+        let initial_len = self.calendar_mappings.len();
+        self.calendar_mappings
+            .retain(|m| m.work_item_id != work_item_id);
+        self.calendar_mappings.len() < initial_len
+    }
+
+    /// Get all calendar mappings (for sync operations)
+    pub fn get_all_calendar_mappings(&self) -> &[CalendarMapping] {
+        &self.calendar_mappings
     }
 }
 

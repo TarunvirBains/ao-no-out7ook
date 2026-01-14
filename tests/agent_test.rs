@@ -139,6 +139,7 @@ fn test_context_state_file_loading() {
         }),
         last_sync: Default::default(),
         work_hours: Default::default(),
+        calendar_mappings: Vec::new(),
     };
 
     // Save state
