@@ -4,6 +4,7 @@ use serde_json::json;
 use wiremock::matchers::{method, path_regex};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
+#[allow(clippy::field_reassign_with_default)]
 fn create_test_config(api_url: String) -> Config {
     let mut config = Config::default();
     config.devops = DevOpsConfig {
@@ -249,11 +250,11 @@ fn test_priority_validation() {
     let invalid_priorities = vec![0, 5, 100];
 
     for p in valid_priorities {
-        assert!(p >= 1 && p <= 4, "Priority {} should be valid", p);
+        assert!((1..=4).contains(&p), "Priority {} should be valid", p);
     }
 
     for p in invalid_priorities {
-        assert!(!(p >= 1 && p <= 4), "Priority {} should be invalid", p);
+        assert!(!(1..=4).contains(&p), "Priority {} should be invalid", p);
     }
 }
 

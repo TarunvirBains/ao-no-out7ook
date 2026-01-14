@@ -1,6 +1,4 @@
 use ao_no_out7ook::devops::client::DevOpsClient;
-use ao_no_out7ook::devops::models::WorkItem;
-use tokio;
 use wiremock::matchers::{header_exists, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 

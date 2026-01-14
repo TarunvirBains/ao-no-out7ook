@@ -1,10 +1,10 @@
 use ao_no_out7ook::commands::devops;
 use ao_no_out7ook::config::{Config, DevOpsConfig};
-use ao_no_out7ook::devops::client::DevOpsClient;
 use serde_json::json;
 use wiremock::matchers::{body_string_contains, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
+#[allow(clippy::field_reassign_with_default)]
 fn create_test_config(api_url: String) -> Config {
     let mut config = Config::default();
     config.devops = DevOpsConfig {

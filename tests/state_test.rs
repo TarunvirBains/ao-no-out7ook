@@ -1,6 +1,4 @@
 use ao_no_out7ook::state::{State, with_state_lock};
-use fs2::FileExt;
-use std::fs::OpenOptions;
 use std::thread;
 use std::time::Duration;
 use tempfile::tempdir;
@@ -9,7 +7,7 @@ use tempfile::tempdir;
 fn test_state_creation() {
     let dir = tempdir().unwrap();
     let state_path = dir.path().join("state.json");
-    let lock_path = dir.path().join("state.lock");
+    let _lock_path = dir.path().join("state.lock");
 
     // Initialize empty state
     let state = State::default();

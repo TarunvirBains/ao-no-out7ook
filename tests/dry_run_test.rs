@@ -1,15 +1,15 @@
-use ao_no_out7ook::commands::{markdown, task};
+use ao_no_out7ook::commands::task;
 use ao_no_out7ook::config::{Config, DevOpsConfig, StateConfig};
 use ao_no_out7ook::devops::models::WorkItem;
 use ao_no_out7ook::utils::markdown::to_markdown;
 use serde_json::json;
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
 use tempfile::TempDir;
 use wiremock::matchers::{method, path, path_regex};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
+#[allow(clippy::field_reassign_with_default)]
 fn create_test_config() -> Config {
     let mut config = Config::default();
     config.devops = DevOpsConfig {

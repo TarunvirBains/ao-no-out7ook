@@ -389,7 +389,7 @@ pub fn update(
 
     if let Some(p) = priority {
         // Validate priority range
-        if p < 1 || p > 4 {
+        if !(1..=4).contains(&p) {
             anyhow::bail!("Priority must be between 1 and 4 (inclusive). Got: {}", p);
         }
         operations.push(serde_json::json!({
@@ -424,10 +424,7 @@ pub fn update(
         return Ok(());
     }
 
-    // Apply all operations in single PATCH
-    let patch_vec = operations.iter().map(|v| v.clone()).collect::<Vec<_>>();
-
-    client.update_work_item_with_rev(id, patch_vec, Some(item.rev))?;
+    client.update_work_item_with_rev(id, operations, Some(item.rev))?;
 
     println!("✓ Task {} updated successfully", id);
     if let Some(user) = assigned_to {

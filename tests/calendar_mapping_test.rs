@@ -1,7 +1,5 @@
 use ao_no_out7ook::platform::{ensure_writable, get_state_dir, state_paths};
-use ao_no_out7ook::state::{CalendarMapping, State};
-use chrono::Utc;
-use std::fs;
+use ao_no_out7ook::state::State;
 use tempfile::TempDir;
 
 #[test]
