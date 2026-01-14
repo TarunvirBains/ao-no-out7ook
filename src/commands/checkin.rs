@@ -1,3 +1,4 @@
+use crate::OutputFormat;
 use crate::commands::task::state_paths;
 use crate::config::Config;
 use crate::state::with_state_lock;
@@ -6,8 +7,37 @@ use anyhow::{Context, Result};
 use std::io::{self, Write};
 
 /// FR3.8: Interactive check-in prompt after Focus Block
-pub fn checkin(config: &Config) -> Result<()> {
+pub fn checkin(config: &Config, format: OutputFormat) -> Result<()> {
     let (lock_path, state_path) = state_paths(config)?;
+
+    // If JSON format is requested, we just return the CurrentTask status
+    // Agents should use 'task state' or 'task stop' for actions
+    if let OutputFormat::Json = format {
+        let current_task = with_state_lock(&lock_path, &state_path, |state| {
+            Ok(state.current_task.clone())
+        })?;
+
+        if let Some(task) = current_task {
+            println!(
+                "{}",
+                serde_json::json!({
+                    "id": task.id,
+                    "title": task.title,
+                    "started_at": task.started_at,
+                    "expires_at": task.expires_at,
+                    "needs_action": true
+                })
+            );
+        } else {
+            println!(
+                "{}",
+                serde_json::json!({
+                    "needs_action": false
+                })
+            );
+        }
+        return Ok(());
+    }
 
     // Get current task from state
     let current_task = with_state_lock(&lock_path, &state_path, |state| {

@@ -1,4 +1,5 @@
 use anyhow::Result;
+use ao_no_out7ook::OutputFormat;
 use ao_no_out7ook::commands;
 use ao_no_out7ook::config;
 use clap::{Args, Parser, Subcommand};
@@ -31,11 +32,15 @@ enum Commands {
             help = "Auto-schedule a Focus Block in the calendar for immediate work"
         )]
         schedule_focus: bool,
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        format: OutputFormat,
     },
     /// Stop current task
     Stop {
         #[arg(long, help = "Preview without stopping timer")]
         dry_run: bool,
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        format: OutputFormat,
     },
     /// Switch to a new task
     Switch {
@@ -48,7 +53,10 @@ enum Commands {
     ///
     /// Interactive command to update task status after a focus session.
     /// Agents: Use 'task state' or 'task stop' for non-interactive updates instead.
-    Checkin,
+    Checkin {
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        format: OutputFormat,
+    },
     /// List configuration
     Config(ConfigArgs),
 
@@ -64,12 +72,16 @@ enum Commands {
         tags: Option<String>,
         #[arg(long, help = "Limit results", default_value = "50")]
         limit: u32,
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        format: OutputFormat,
     },
 
     /// Show work item details
     Show {
         #[arg(help = "Work Item ID")]
         id: u32,
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        format: OutputFormat,
     },
 
     /// Update work item state
@@ -197,7 +209,10 @@ enum OauthAction {
     /// Authenticate with Microsoft Graph (device code flow)
     Login,
     /// Show current authentication status
-    Status,
+    Status {
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        format: OutputFormat,
+    },
 }
 
 #[derive(Args)]
@@ -214,6 +229,8 @@ enum CalendarAction {
         days: u32,
         #[arg(long, help = "Filter by work item ID")]
         work_item: Option<u32>,
+        #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+        format: OutputFormat,
     },
     /// Schedule Focus Block for work item
     Schedule {
@@ -275,22 +292,23 @@ fn main() -> Result<()> {
             id,
             dry_run,
             schedule_focus,
+            format,
         } => {
-            commands::task::start(&config, *id, *dry_run, *schedule_focus)?;
+            commands::task::start(&config, *id, *dry_run, *schedule_focus, *format)?;
         }
-        Commands::Stop { dry_run } => {
-            commands::task::stop(&config, *dry_run)?;
+        Commands::Stop { dry_run, format } => {
+            commands::task::stop(&config, *dry_run, *format)?;
         }
         Commands::Switch { id } => {
-            commands::task::stop(&config, false)?;
+            commands::task::stop(&config, false, OutputFormat::Text)?;
             // Switch doesn't auto-schedule Focus Block
-            commands::task::start(&config, *id, false, false)?;
+            commands::task::start(&config, *id, false, false, OutputFormat::Text)?;
         }
         Commands::Current => {
             commands::task::current(&config)?;
         }
-        Commands::Checkin => {
-            commands::checkin::checkin(&config)?;
+        Commands::Checkin { format } => {
+            commands::checkin::checkin(&config, *format)?;
         }
         Commands::Config(args) => match &args.action {
             ConfigAction::List => commands::config::list(&config)?,
@@ -303,6 +321,7 @@ fn main() -> Result<()> {
             search,
             tags,
             limit,
+            format,
         } => {
             commands::devops::list(
                 &config,
@@ -311,10 +330,11 @@ fn main() -> Result<()> {
                 search.clone(),
                 tags.clone(),
                 Some(*limit),
+                *format,
             )?;
         }
-        Commands::Show { id } => {
-            commands::devops::show(&config, *id)?;
+        Commands::Show { id, format } => {
+            commands::devops::show(&config, *id, *format)?;
         }
         Commands::State {
             id,
@@ -371,15 +391,19 @@ fn main() -> Result<()> {
                 tokio::runtime::Runtime::new()?
                     .block_on(commands::calendar::oauth_login(&config))?;
             }
-            OauthAction::Status => {
+            OauthAction::Status { format } => {
                 tokio::runtime::Runtime::new()?
-                    .block_on(commands::calendar::oauth_status(&config))?;
+                    .block_on(commands::calendar::oauth_status(&config, *format))?;
             }
         },
         Commands::Calendar(calendar_args) => match &calendar_args.action {
-            CalendarAction::List { days, work_item } => {
+            CalendarAction::List {
+                days,
+                work_item,
+                format,
+            } => {
                 tokio::runtime::Runtime::new()?.block_on(commands::calendar::calendar_list(
-                    &config, *days, *work_item,
+                    &config, *days, *work_item, *format,
                 ))?;
             }
             CalendarAction::Schedule {

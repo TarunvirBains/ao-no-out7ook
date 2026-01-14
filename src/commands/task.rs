@@ -1,3 +1,4 @@
+use crate::OutputFormat;
 use crate::config::Config;
 use crate::devops::client::DevOpsClient;
 use crate::state::{CurrentTask, State, with_state_lock};
@@ -15,7 +16,13 @@ pub fn state_paths(config: &Config) -> Result<(PathBuf, PathBuf)> {
     Ok((state_dir.join("state.lock"), state_dir.join("state.json")))
 }
 
-pub fn start(config: &Config, id: u32, dry_run: bool, schedule_focus: bool) -> Result<()> {
+pub fn start(
+    config: &Config,
+    id: u32,
+    dry_run: bool,
+    schedule_focus: bool,
+    format: OutputFormat,
+) -> Result<()> {
     let (lock_path, state_path) = state_paths(config)?;
 
     // 1. Fetch work item from DevOps to validate
@@ -31,7 +38,9 @@ pub fn start(config: &Config, id: u32, dry_run: bool, schedule_focus: bool) -> R
         pace_client = pace_client.with_base_url(url);
     }
 
-    println!("Fetching work item {}...", id);
+    if let OutputFormat::Text = format {
+        println!("Fetching work item {}...", id);
+    }
     let work_item = devops_client.get_work_item(id)?;
     let title = work_item.get_title().unwrap_or("Unknown Title").to_string();
 
@@ -152,15 +161,27 @@ pub fn start(config: &Config, id: u32, dry_run: bool, schedule_focus: bool) -> R
             title: title.clone(),
             started_at: now,
             expires_at: now + chrono::Duration::hours(config.state.task_expiry_hours.into()),
-            timer_id,
+            timer_id: timer_id.clone(),
         });
 
-        println!("✓ Started task: {} - {}", id, title);
+        if let OutputFormat::Json = format {
+            println!(
+                "{}",
+                serde_json::json!({
+                    "id": id,
+                    "title": title,
+                    "started_at": now,
+                    "timer_id": timer_id
+                })
+            );
+        } else {
+            println!("✓ Started task: {} - {}", id, title);
+        }
         Ok(())
     })
 }
 
-pub fn stop(config: &Config, dry_run: bool) -> Result<()> {
+pub fn stop(config: &Config, dry_run: bool, format: OutputFormat) -> Result<()> {
     let (lock_path, state_path) = state_paths(config)?;
 
     with_state_lock(&lock_path, &state_path, |state| {
@@ -187,13 +208,34 @@ pub fn stop(config: &Config, dry_run: bool) -> Result<()> {
                 //     }
                 // So it did NOT call API. This is a known limitation/TODO.
 
-                println!("✓ Stopped task: {} - {}", current.id, current.title);
+                if let OutputFormat::Json = format {
+                    println!(
+                        "{}",
+                        serde_json::json!({
+                            "id": current.id,
+                            "title": current.title,
+                            "status": "stopped"
+                        })
+                    );
+                } else {
+                    println!("✓ Stopped task: {} - {}", current.id, current.title);
+                }
+                state.current_task = None;
             } else {
                 println!("✓ Stopped task: {} - {}", current.id, current.title);
+                state.current_task = None;
             }
-            state.current_task = None;
         } else {
-            println!("No active task to stop.");
+            if let OutputFormat::Json = format {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "status": "no_active_task"
+                    })
+                );
+            } else {
+                println!("No active task to stop.");
+            }
         }
         Ok(())
     })

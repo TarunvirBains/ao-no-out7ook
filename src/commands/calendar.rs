@@ -1,3 +1,4 @@
+use crate::OutputFormat;
 use crate::config::Config;
 use crate::graph::auth::GraphAuthenticator;
 use crate::graph::client::GraphClient;
@@ -29,7 +30,7 @@ pub async fn oauth_login(config: &Config) -> Result<()> {
 }
 
 /// OAuth status command - show authentication status
-pub async fn oauth_status(config: &Config) -> Result<()> {
+pub async fn oauth_status(config: &Config, format: OutputFormat) -> Result<()> {
     let token_cache_path = home_dir()
         .context("Could not find home directory")?
         .join(".ao-no-out7ook")
@@ -44,12 +45,32 @@ pub async fn oauth_status(config: &Config) -> Result<()> {
 
     match auth.get_access_token().await {
         Ok(_) => {
-            println!("✓ Authenticated with Microsoft Graph");
-            println!("  Token cache: {}", token_cache_path.display());
+            if let OutputFormat::Json = format {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "authenticated": true,
+                        "token_cache": token_cache_path
+                    })
+                );
+            } else {
+                println!("✓ Authenticated with Microsoft Graph");
+                println!("  Token cache: {}", token_cache_path.display());
+            }
         }
         Err(e) => {
-            println!("❌ Authentication expired or invalid: {}", e);
-            println!("  Run 'task oauth login' to re-authenticate.");
+            if let OutputFormat::Json = format {
+                println!(
+                    "{}",
+                    serde_json::json!({
+                        "authenticated": false,
+                        "error": e.to_string()
+                    })
+                );
+            } else {
+                println!("❌ Authentication expired or invalid: {}", e);
+                println!("  Run 'task oauth login' to re-authenticate.");
+            }
         }
     }
 
@@ -57,7 +78,12 @@ pub async fn oauth_status(config: &Config) -> Result<()> {
 }
 
 /// List calendar events
-pub async fn calendar_list(config: &Config, days: u32, work_item: Option<u32>) -> Result<()> {
+pub async fn calendar_list(
+    config: &Config,
+    days: u32,
+    work_item: Option<u32>,
+    format: OutputFormat,
+) -> Result<()> {
     let token_cache_path = home_dir()
         .context("Could not find home directory")?
         .join(".ao-no-out7ook")
@@ -72,7 +98,16 @@ pub async fn calendar_list(config: &Config, days: u32, work_item: Option<u32>) -
     let events = client.list_events(start, end).await?;
 
     if events.is_empty() {
-        println!("No events found in the next {} days.", days);
+        if let OutputFormat::Json = format {
+            println!("[]");
+        } else {
+            println!("No events found in the next {} days.", days);
+        }
+        return Ok(());
+    }
+
+    if let OutputFormat::Json = format {
+        println!("{}", serde_json::to_string_pretty(&events)?);
         return Ok(());
     }
 

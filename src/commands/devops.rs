@@ -1,3 +1,4 @@
+use crate::OutputFormat;
 use crate::config::Config;
 use crate::devops::client::DevOpsClient;
 use anyhow::{Context, Result};
@@ -9,6 +10,7 @@ pub fn list(
     search: Option<String>,
     tags: Option<String>,
     limit: Option<u32>,
+    format: OutputFormat,
 ) -> Result<()> {
     let pat = config
         .devops
@@ -74,6 +76,11 @@ pub fn list(
     }
 
     let items = client.get_work_items_batch(&ids)?;
+
+    if let OutputFormat::Json = format {
+        println!("{}", serde_json::to_string_pretty(&items)?);
+        return Ok(());
+    }
 
     println!(
         "{:<8} {:<50} {:<15} {:<5} {:<10}",
@@ -214,7 +221,7 @@ pub fn list_with_sort(
     Ok(())
 }
 
-pub fn show(config: &Config, id: u32) -> Result<()> {
+pub fn show(config: &Config, id: u32, format: OutputFormat) -> Result<()> {
     let pat = config
         .devops
         .pat
@@ -222,6 +229,11 @@ pub fn show(config: &Config, id: u32) -> Result<()> {
         .context("DevOps PAT not set. Run 'task config set devops.pat <PAT>'")?;
     let client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
     let item = client.get_work_item(id)?;
+
+    if let OutputFormat::Json = format {
+        println!("{}", serde_json::to_string_pretty(&item)?);
+        return Ok(());
+    }
 
     println!(
         "Task {}: {}",
