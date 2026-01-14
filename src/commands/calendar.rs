@@ -145,8 +145,9 @@ pub async fn calendar_schedule(
     let client = GraphClient::new(auth);
 
     // Get work item title from DevOps
+    let pat = config.get_devops_pat()?;
     let devops_client = crate::devops::client::DevOpsClient::new(
-        config.devops.pat.as_deref().context("DevOps PAT not set")?,
+        &pat,
         &config.devops.organization,
         &config.devops.project,
     );

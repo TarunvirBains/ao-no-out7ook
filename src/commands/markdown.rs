@@ -9,12 +9,8 @@ use std::path::Path;
 /// Export work items to markdown (FR4.1)
 /// Exports ALL items including completed (full state snapshot)
 pub fn export(config: &Config, ids: Vec<u32>, hierarchy: bool, output: &Path) -> Result<()> {
-    let pat = config
-        .devops
-        .pat
-        .as_deref()
-        .context("DevOps PAT not set. Run 'task config set devops.pat <PAT>'")?;
-    let client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
+    let pat = config.get_devops_pat()?;
+    let client = DevOpsClient::new(&pat, &config.devops.organization, &config.devops.project);
 
     // Fetch work items
     let items: Vec<_> = if hierarchy {
@@ -127,8 +123,8 @@ pub fn import(
     }
 
     // Import to DevOps
-    let pat = config.devops.pat.as_deref().context("DevOps PAT not set")?;
-    let client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
+    let pat = config.get_devops_pat()?;
+    let client = DevOpsClient::new(&pat, &config.devops.organization, &config.devops.project);
 
     for item in filtered_items {
         if let Some(id) = item.id {

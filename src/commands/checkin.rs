@@ -111,9 +111,9 @@ pub fn checkin(config: &Config) -> Result<()> {
             println!("\n⚠ Marking task as blocked...");
 
             // Stop timer
-            let pat = config.devops.pat.as_deref().context("DevOps PAT not set")?;
+            let pat = config.get_devops_pat()?;
             let pace_client =
-                crate::pace::client::PaceClient::new(pat, &config.devops.organization);
+                crate::pace::client::PaceClient::new(&pat, &config.devops.organization);
 
             match pace_client.stop_timer(0) {
                 Ok(_) => println!("✓ Timer stopped"),
@@ -126,9 +126,9 @@ pub fn checkin(config: &Config) -> Result<()> {
             println!("\n✓ Completing Task {}...", task_info.id);
 
             // Stop timer
-            let pat = config.devops.pat.as_deref().context("DevOps PAT not set")?;
+            let pat = config.get_devops_pat()?;
             let pace_client =
-                crate::pace::client::PaceClient::new(pat, &config.devops.organization);
+                crate::pace::client::PaceClient::new(&pat, &config.devops.organization);
 
             match pace_client.stop_timer(0) {
                 Ok(_) => println!("✓ Timer stopped"),

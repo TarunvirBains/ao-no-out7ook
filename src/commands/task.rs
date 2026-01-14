@@ -15,13 +15,10 @@ pub fn start(config: &Config, id: u32, dry_run: bool, schedule_focus: bool) -> R
     let (lock_path, state_path) = state_paths()?;
 
     // 1. Fetch work item from DevOps to validate
-    let pat = config
-        .devops
-        .pat
-        .as_deref()
-        .context("DevOps PAT not set. Run 'task config set devops.pat <PAT>'")?;
-    let devops_client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
-    let pace_client = crate::pace::client::PaceClient::new(pat, &config.devops.organization);
+    let pat = config.get_devops_pat()?;
+    let devops_client =
+        DevOpsClient::new(&pat, &config.devops.organization, &config.devops.project);
+    let pace_client = crate::pace::client::PaceClient::new(&pat, &config.devops.organization);
 
     println!("Fetching work item {}...", id);
     let work_item = devops_client.get_work_item(id)?;

@@ -45,8 +45,8 @@ pub fn agent_context(config: &Config, format: &str) -> Result<()> {
         }
     };
 
-    let pat = config.devops.pat.as_deref().unwrap_or("");
-    let client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
+    let pat = config.get_devops_pat()?;
+    let client = DevOpsClient::new(&pat, &config.devops.organization, &config.devops.project);
     let work_item = client.get_work_item(current_task_id)?;
 
     println!("Current Task:");
@@ -104,8 +104,8 @@ pub fn agent_decompose(config: &Config, input_path: PathBuf, dry_run: bool) -> R
     let input: DecomposeInput =
         serde_json::from_str(&content).context("Failed to parse decomposition JSON")?;
 
-    let pat = config.devops.pat.as_deref().unwrap_or("");
-    let client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
+    let pat = config.get_devops_pat()?;
+    let client = DevOpsClient::new(&pat, &config.devops.organization, &config.devops.project);
 
     // Validate parent
     let parent = client
