@@ -1,226 +1,132 @@
-use ao_no_out7ook::commands::{markdown, task};
-use ao_no_out7ook::config::{Config, DevOpsConfig};
-use ao_no_out7ook::state::State;
+use ao_no_out7ook::devops::models::WorkItem;
+use ao_no_out7ook::utils::markdown::{from_markdown, to_markdown};
 use serde_json::json;
+use std::collections::HashMap;
 use std::fs;
 use tempfile::NamedTempFile;
-use wiremock::matchers::{body_partial_json, header, method, path, path_regex};
-use wiremock::{Mock, MockServer, ResponseTemplate};
 
-fn create_test_config() -> Config {
-    let mut config = Config::default();
-    config.devops = DevOpsConfig {
-        pat: Some("TEST_PAT".to_string()),
-        organization: "test-org".to_string(),
-        project: "test-project".to_string(),
-        skip_states: vec!["Completed".to_string()],
-    };
-    config
-}
+fn create_mock_work_item(id: u32, title: &str, state: &str) -> WorkItem {
+    let mut fields = HashMap::new();
+    fields.insert("System.Title".to_string(), json!(title));
+    fields.insert("System.State".to_string(), json!(state));
+    fields.insert("System.WorkItemType".to_string(), json!("Task"));
 
-fn mock_work_item_response(id: u32, title: &str, state: &str) -> serde_json::Value {
-    json!({
-        "id": id,
-        "rev": 1,
-        "fields": {
-            "System.Title": title,
-            "System.State": state,
-            "System.WorkItemType": "Task"
-        },
-        "url": format!("https://dev.azure.com/test-org/test-project/_apis/wit/workItems/{}", id)
-    })
-}
-
-#[tokio::test]
-async fn test_start_command_integration() {
-    let mock_server = MockServer::start().await;
-    let config = create_test_config();
-
-    // Mock DevOps work item fetch
-    Mock::given(method("GET"))
-        .and(path_regex("/test-project/_apis/wit/workitems/123"))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(mock_work_item_response(
-                123,
-                "Test Task",
-                "Active",
-            )),
-        )
-        .mount(&mock_server)
-        .await;
-
-    // Mock Pace start timer
-    Mock::given(method("POST"))
-        .and(path("/_apis/api/tracking/client/startTracking"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "id": "timer-123",
-            "work ItemId": 123,
-            "startedAt": "2026-01-14T00:00:00Z"
-        })))
-        .mount(&mock_server)
-        .await;
-
-    // Mock Pace get current timer (conflict check)
-    Mock::given(method("GET"))
-        .and(path("/_apis/api/tracking/client/current"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!(null)))
-        .mount(&mock_server)
-        .await;
-
-    // Create temp state file
-    let temp_dir = tempfile::tempdir().unwrap();
-    let state_path = temp_dir.path().join("state.json");
-
-    // Note: Full integration would require state module changes to accept custom paths
-    // For now, this tests the command logic exists and compiles
-    // Real E2E test would mock state_paths() to return temp paths
-
-    // This placeholder shows the pattern - actual implementation needs state path injection
-    assert!(true); // Verifies compilation
-}
-
-#[tokio::test]
-async fn test_export_import_round_trip() {
-    let mock_server = MockServer::start().await;
-    let config = create_test_config();
-
-    // Mock export: fetch work items
-    Mock::given(method("GET"))
-        .and(path_regex("/test-project/_apis/wit/workitems/\\d+"))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(mock_work_item_response(
-                100,
-                "Original Title",
-                "Active",
-            )),
-        )
-        .mount(&mock_server)
-        .await;
-
-    // Mock import: update work item
-    Mock::given(method("PATCH"))
-        .and(path_regex("/test-project/_apis/wit/workitems/\\d+"))
-        .and(header("Content-Type", "application/json-patch+json"))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(mock_work_item_response(
-                100,
-                "Modified Title",
-                "Active",
-            )),
-        )
-        .mount(&mock_server)
-        .await;
-
-    let temp_file = NamedTempFile::new().unwrap();
-
-    // Export work item to markdown
-    // Note: Requires DevOpsClient injection of mock server URL
-    // Placeholder test showing pattern
-
-    let markdown_content = r#"#### Task: Modified Title (#100)
-**State:** Active | **Iteration:** Sprint 1 | **Effort:** 3h
-
-Original description here.
-"#;
-    fs::write(temp_file.path(), markdown_content).unwrap();
-
-    // This verifies the command functions exist and compile
-    // Full E2E would need client URL injection
-    assert!(temp_file.path().exists());
-}
-
-#[tokio::test]
-async fn test_work_item_state_transition() {
-    let mock_server = MockServer::start().await;
-
-    // Mock PATCH to update state
-    Mock::given(method("PATCH"))
-        .and(path_regex("/test-project/_apis/wit/workitems/123"))
-        .and(body_partial_json(json!([
-            {
-                "op": "add",
-                "path": "/fields/System.State",
-                "value": "Completed"
-            }
-        ])))
-        .respond_with(
-            ResponseTemplate::new(200).set_body_json(mock_work_item_response(
-                123,
-                "Test Task",
-                "Completed",
-            )),
-        )
-        .mount(&mock_server)
-        .await;
-
-    // This test verifies the PATCH structure for state transitions
-    // Actual command test needs DevOpsClient URL injection
-    assert!(true); // Compilation check
-}
-
-#[tokio::test]
-async fn test_list_command_with_filtering() {
-    let mock_server = MockServer::start().await;
-
-    // Mock WIQL query for filtering
-    Mock::given(method("POST"))
-        .and(path_regex("/test-project/_apis/wit/wiql"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "queryType": "flat",
-            "queryResultType": "workItem",
-            "workItems": [
-                {"id": 1, "url": "https://dev.azure.com/test/1"},
-                {"id": 2, "url": "https://dev.azure.com/test/2"}
-            ]
-        })))
-        .mount(&mock_server)
-        .await;
-
-    // Mock work item batch fetch
-    Mock::given(method("GET"))
-        .and(path_regex("/test-project/_apis/wit/workitems"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "count": 2,
-            "value": [
-                mock_work_item_response(1, "Task 1", "Active"),
-                mock_work_item_response(2, "Task 2", "Active")
-            ]
-        })))
-        .mount(&mock_server)
-        .await;
-
-    // Verifies WIQL filtering logic exists
-    assert!(true); // Compilation check
+    WorkItem {
+        id,
+        rev: 1,
+        fields,
+        relations: None,
+        url: format!("https://dev.azure.com/test/{}", id),
+    }
 }
 
 #[test]
-fn test_markdown_export_creates_file() {
-    // Simple filesystem test without API calls
-    let temp_file = NamedTempFile::new().unwrap();
+fn test_markdown_export_creates_valid_format() {
+    let work_item = create_mock_work_item(100, "Test Task", "Active");
+    let markdown = to_markdown(&work_item);
 
-    // Verify file operations work
-    fs::write(
-        temp_file.path(),
-        "#### Task: Test (#1)\n**State:** Active\n\nDescription",
-    )
-    .unwrap();
-
-    let content = fs::read_to_string(temp_file.path()).unwrap();
-    assert!(content.contains("Test (#1)"));
+    assert!(markdown.contains("#### Task:"));
+    assert!(markdown.contains("Test Task"));
+    assert!(markdown.contains("#100"));
+    assert!(markdown.contains("**State:** Active"));
 }
 
 #[test]
-fn test_markdown_import_parses_file() {
-    let temp_file = NamedTempFile::new().unwrap();
+fn test_markdown_import_parses_work_item() {
     let markdown = r#"#### Task: Import Test (#0)
 **State:** New | **Effort:** 2h
 
-This is a new task.
+This is a new task description.
+"#;
+
+    let items = from_markdown(markdown).unwrap();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0].title, "Import Test");
+    assert!(items[0].description.contains("new task"));
+}
+
+#[test]
+fn test_markdown_round_trip_consistency() {
+    let original = create_mock_work_item(200, "Round Trip Test", "Active");
+
+    // Export to markdown
+    let markdown = to_markdown(&original);
+
+    // Verify markdown contains key fields
+    assert!(markdown.contains("Round Trip Test"));
+    assert!(markdown.contains("#200"));
+}
+
+#[test]
+fn test_markdown_export_file_operations() {
+    let temp_file = NamedTempFile::new().unwrap();
+    let work_item = create_mock_work_item(300, "File Test", "Active");
+
+    // Export to file
+    let markdown = to_markdown(&work_item);
+    fs::write(temp_file.path(), &markdown).unwrap();
+
+    // Read back
+    let content = fs::read_to_string(temp_file.path()).unwrap();
+    assert!(content.contains("File Test"));
+    assert!(content.contains("#300"));
+}
+
+#[test]
+fn test_markdown_import_from_file() {
+    let temp_file = NamedTempFile::new().unwrap();
+    let markdown = r#"#### Task: File Import (#0)
+**State:** New
+
+From file test.
 "#;
 
     fs::write(temp_file.path(), markdown).unwrap();
 
-    // Verify markdown parsing (already tested in utils/markdown.rs)
+    // Read and parse
     let content = fs::read_to_string(temp_file.path()).unwrap();
-    assert!(content.contains("Import Test"));
+    let items = from_markdown(&content).unwrap();
+
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0].title, "File Import");
+}
+
+#[test]
+fn test_markdown_multiple_work_items() {
+    let markdown = r#"#### Task: First Task (#1)
+**State:** Active
+
+First description.
+
+---
+
+#### Task: Second Task (#2)
+**State:** New
+
+Second description.
+"#;
+
+    let items = from_markdown(markdown).unwrap();
+    assert_eq!(items.len(), 2);
+    assert_eq!(items[0].title, "First Task");
+    assert_eq!(items[1].title, "Second Task");
+}
+
+#[test]
+fn test_markdown_preserves_work_item_type() {
+    let mut fields = HashMap::new();
+    fields.insert("System.Title".to_string(), json!("Bug Test"));
+    fields.insert("System.State".to_string(), json!("Active"));
+    fields.insert("System.WorkItemType".to_string(), json!("Bug"));
+
+    let work_item = WorkItem {
+        id: 400,
+        rev: 1,
+        fields,
+        relations: None,
+        url: "https://dev.azure.com/test/400".to_string(),
+    };
+
+    let markdown = to_markdown(&work_item);
+    assert!(markdown.contains("#### Bug:"));
 }

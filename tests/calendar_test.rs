@@ -1,45 +1,5 @@
-use ao_no_out7ook::config::{Config, DevOpsConfig, GraphConfig};
 use ao_no_out7ook::graph::models::{CalendarEvent, DateTimeTimeZone, ItemBody};
 use chrono::Utc;
-
-fn create_test_config() -> Config {
-    let mut config = Config::default();
-    config.devops = DevOpsConfig {
-        pat: Some("test-pat".to_string()),
-        organization: "test-org".to_string(),
-        project: "test-project".to_string(),
-        skip_states: vec![],
-    };
-    config.graph = GraphConfig {
-        client_id: "test-client-id".to_string(),
-        tenant_id: "common".to_string(),
-    };
-    config
-}
-
-#[tokio::test]
-#[ignore] // Requires actual Graph API or extensive mocking
-async fn test_calendar_schedule_creates_event() {
-    let _config = create_test_config();
-
-    // This test would require:
-    // 1. Mocking GraphClient
-    // 2. Mocking DevOpsClient for work item fetch
-    // 3. Verifying event creation
-
-    // For now, we document the expected behavior
-    assert!(true); // Placeholder
-}
-
-#[tokio::test]
-#[ignore] // Requires Graph API mocking
-async fn test_calendar_list_filters_by_work_item() {
-    let _config = create_test_config();
-
-    // This test would verify filtering logic
-    // Currently requires extensive mocking setup
-    assert!(true); // Placeholder
-}
 
 #[test]
 fn test_calendar_event_model_serialization() {
@@ -62,6 +22,7 @@ fn test_calendar_event_model_serialization() {
     // Verify serialization works
     let json = serde_json::to_string(&event).unwrap();
     assert!(json.contains("Test Event"));
+    assert!(json.contains("Focus Block"));
 }
 
 #[test]
@@ -86,6 +47,7 @@ fn test_calendar_event_deserialize() {
     let event = result.unwrap();
     assert_eq!(event.id, Some("event-123".to_string()));
     assert_eq!(event.subject, "Meeting");
+    assert_eq!(event.categories, vec!["Meeting"]);
 }
 
 #[test]
@@ -95,6 +57,8 @@ fn test_datetime_timezone_formatting() {
 
     assert_eq!(dt_tz.time_zone, "America/Los_Angeles");
     assert!(!dt_tz.date_time.is_empty());
+    // Date format should be ISO 8601
+    assert!(dt_tz.date_time.contains("T"));
 }
 
 #[test]
@@ -115,4 +79,50 @@ fn test_calendar_event_minimal_fields() {
     // Should serialize without errors
     let json = serde_json::to_string(&event).unwrap();
     assert!(json.contains("Minimal Event"));
+}
+
+#[test]
+fn test_calendar_event_with_html_body() {
+    let start = Utc::now();
+    let end = start + chrono::Duration::minutes(30);
+
+    let event = CalendarEvent {
+        id: Some("html-event".to_string()),
+        subject: "HTML Event".to_string(),
+        start: DateTimeTimeZone::from_utc(start, "UTC"),
+        end: DateTimeTimeZone::from_utc(end, "UTC"),
+        body: Some(ItemBody {
+            content_type: "html".to_string(),
+            content: "<p>This is <strong>HTML</strong> content</p>".to_string(),
+        }),
+        categories: vec!["Work".to_string()],
+        extended_properties: None,
+    };
+
+    let json = serde_json::to_string(&event).unwrap();
+    assert!(json.contains("html"));
+    assert!(json.contains("<p>"));
+}
+
+#[test]
+fn test_calendar_event_multiple_categories() {
+    let start = Utc::now();
+    let end = start + chrono::Duration::hours(2);
+
+    let event = CalendarEvent {
+        id: None,
+        subject: "Multi-Category Event".to_string(),
+        start: DateTimeTimeZone::from_utc(start, "UTC"),
+        end: DateTimeTimeZone::from_utc(end, "UTC"),
+        body: None,
+        categories: vec![
+            "Focus Block".to_string(),
+            "Deep Work".to_string(),
+            "Priority".to_string(),
+        ],
+        extended_properties: None,
+    };
+
+    assert_eq!(event.categories.len(), 3);
+    assert!(event.categories.contains(&"Deep Work".to_string()));
 }
