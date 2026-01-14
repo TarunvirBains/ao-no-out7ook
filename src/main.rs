@@ -1,6 +1,6 @@
+use anyhow::Result;
 use ao_no_out7ook::commands;
 use ao_no_out7ook::config;
-use anyhow::Result;
 use clap::{Args, Parser, Subcommand};
 
 #[derive(Parser)]
@@ -93,6 +93,8 @@ enum Commands {
         hierarchy: bool,
         #[arg(short, long, help = "Output file path")]
         output: std::path::PathBuf,
+        #[arg(long, help = "Preview export without writing file")]
+        dry_run: bool,
     },
 
     /// Import work items from Markdown (Phase 4)
@@ -292,8 +294,9 @@ fn main() -> Result<()> {
             ids,
             hierarchy,
             output,
+            dry_run,
         } => {
-            commands::markdown::export(&config, ids.clone(), *hierarchy, output)?;
+            commands::markdown::export(&config, ids.clone(), *hierarchy, output, *dry_run)?;
         }
         Commands::Import {
             file,

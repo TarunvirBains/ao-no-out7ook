@@ -8,7 +8,14 @@ use std::path::Path;
 
 /// Export work items to markdown (FR4.1)
 /// Exports ALL items including completed (full state snapshot)
-pub fn export(config: &Config, ids: Vec<u32>, hierarchy: bool, output: &Path) -> Result<()> {
+/// If dry_run is true, prints markdown to stdout instead of writing to file
+pub fn export(
+    config: &Config,
+    ids: Vec<u32>,
+    hierarchy: bool,
+    output: &Path,
+    dry_run: bool,
+) -> Result<()> {
     let pat = config.get_devops_pat()?;
     let client = DevOpsClient::new(&pat, &config.devops.organization, &config.devops.project);
 
@@ -36,8 +43,15 @@ pub fn export(config: &Config, ids: Vec<u32>, hierarchy: bool, output: &Path) ->
             .join("\n\n---\n\n")
     };
 
-    std::fs::write(output, markdown)?;
-    println!("✓ Exported {} items to {}", items.len(), output.display());
+    if dry_run {
+        println!("--- DRY RUN: Export Preview ---");
+        println!("{}", markdown);
+        println!("--- Would write to: {} ---", output.display());
+        println!("✓ [DRY RUN] Would export {} items", items.len());
+    } else {
+        std::fs::write(output, markdown)?;
+        println!("✓ Exported {} items to {}", items.len(), output.display());
+    }
     Ok(())
 }
 
