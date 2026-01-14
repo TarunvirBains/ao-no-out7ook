@@ -1,3 +1,4 @@
+use crate::commands::task::state_paths;
 use crate::config::Config;
 use crate::devops::client::DevOpsClient;
 use crate::devops::models::WorkItem;
@@ -26,7 +27,7 @@ pub fn agent_context(config: &Config, format: &str) -> Result<()> {
         anyhow::bail!("Only 'llm' format is currently supported");
     }
 
-    let (lock_path, state_path) = match state_paths() {
+    let (_lock_path, state_path) = match state_paths(config) {
         Ok(paths) => paths,
         Err(e) => {
             eprintln!("Failed to determine state paths: {}", e);
@@ -85,17 +86,7 @@ pub fn agent_context(config: &Config, format: &str) -> Result<()> {
     Ok(())
 }
 
-fn state_paths() -> Result<(PathBuf, PathBuf)> {
-    let home = home::home_dir().context("Could not find home directory")?;
-    // We stay consistent with .ao_no_out7ook directory if we migrated, but strictly speaking
-    // the previous code used ".ao-no-out7ook". I'll stick to that for compatibility
-    // since I haven't migrated the config folder yet.
-    // Actually, I renamed the binary but not the config folder in code.
-    // Ideally I should rename the folder too, but that's a data migration.
-    // Providing legacy folder logic:
-    let state_dir = home.join(".ao-no-out7ook");
-    Ok((state_dir.join("state.lock"), state_dir.join("state.json")))
-}
+// Use imported state_paths
 
 pub fn agent_decompose(config: &Config, input_path: PathBuf, dry_run: bool) -> Result<()> {
     let content = fs::read_to_string(&input_path)

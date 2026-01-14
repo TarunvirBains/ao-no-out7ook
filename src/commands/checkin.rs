@@ -1,18 +1,13 @@
+use crate::commands::task::state_paths;
 use crate::config::Config;
 use crate::state::with_state_lock;
 use anyhow::{Context, Result};
-use std::io::{self, Write};
-use std::path::PathBuf;
 
-fn state_paths() -> Result<(PathBuf, PathBuf)> {
-    let home = home::home_dir().context("Could not find home directory")?;
-    let state_dir = home.join(".ao-no-out7ook");
-    Ok((state_dir.join("state.lock"), state_dir.join("state.json")))
-}
+use std::io::{self, Write};
 
 /// FR3.8: Interactive check-in prompt after Focus Block
 pub fn checkin(config: &Config) -> Result<()> {
-    let (lock_path, state_path) = state_paths()?;
+    let (lock_path, state_path) = state_paths(config)?;
 
     // Get current task from state
     let current_task = with_state_lock(&lock_path, &state_path, |state| {

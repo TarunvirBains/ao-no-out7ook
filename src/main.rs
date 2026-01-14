@@ -257,15 +257,15 @@ fn main() -> Result<()> {
             commands::task::start(&config, *id, *dry_run, *schedule_focus)?;
         }
         Commands::Stop { dry_run } => {
-            commands::task::stop(*dry_run)?;
+            commands::task::stop(&config, *dry_run)?;
         }
         Commands::Switch { id } => {
-            commands::task::stop(false)?;
+            commands::task::stop(&config, false)?;
             // Switch doesn't auto-schedule Focus Block
             commands::task::start(&config, *id, false, false)?;
         }
         Commands::Current => {
-            commands::task::current()?;
+            commands::task::current(&config)?;
         }
         Commands::Checkin => {
             commands::checkin::checkin(&config)?;

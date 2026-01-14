@@ -3,7 +3,7 @@ use crate::devops::client::DevOpsClient;
 use crate::utils::markdown::{
     Severity, display_validation_errors, from_markdown, to_markdown, validate_markdown_structure,
 };
-use anyhow::{Context, Result};
+use anyhow::Result;
 use std::path::Path;
 
 /// Export work items to markdown (FR4.1)

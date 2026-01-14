@@ -2,6 +2,7 @@ use anyhow::{Context, Result};
 use config::{Config as ConfigBuilder, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::path::PathBuf;
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct Config {
@@ -25,6 +26,10 @@ pub struct DevOpsConfig {
     /// States to skip during markdown import (case-insensitive)
     #[serde(default = "default_skip_states")]
     pub skip_states: Vec<String>,
+    /// Optional API URL override for testing (e.g. mocking)
+    pub api_url: Option<String>,
+    /// Optional 7Pace API URL override for testing
+    pub pace_api_url: Option<String>,
 }
 
 fn default_skip_states() -> Vec<String> {
@@ -43,6 +48,8 @@ impl Default for DevOpsConfig {
             organization: String::new(),
             project: String::new(),
             skip_states: default_skip_states(),
+            api_url: None,
+            pace_api_url: None,
         }
     }
 }
@@ -94,12 +101,15 @@ impl Default for FocusBlocksConfig {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct StateConfig {
     pub task_expiry_hours: u32,
+    /// Optional override for state directory (for testing)
+    pub state_dir_override: Option<PathBuf>,
 }
 
 impl Default for StateConfig {
     fn default() -> Self {
         Self {
             task_expiry_hours: 24,
+            state_dir_override: None,
         }
     }
 }
