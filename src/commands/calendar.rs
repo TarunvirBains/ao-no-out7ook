@@ -169,14 +169,36 @@ pub async fn calendar_schedule(
     let subject =
         custom_title.unwrap_or_else(|| format!("🎯 Focus: {} - {}", work_item_id, work_item_title));
 
+    // FR3.9: Build event body with checkin action URLs
+    let checkin_body = format!(
+        r#"<html><body>
+<h2>Focus Block: Task #{}</h2>
+<p><strong>{}</strong></p>
+<hr/>
+<h3>Check-in Actions</h3>
+<p>When this focus block ends, use one of these actions:</p>
+<ul>
+<li><a href="ao7://checkin?id={}&action=continue">✅ Continue Working</a></li>
+<li><a href="ao7://checkin?id={}&action=blocked">🚧 Blocked - Need Help</a></li>
+<li><a href="ao7://checkin?id={}&action=stop">⏹️ Stop - Task Complete</a></li>
+</ul>
+<hr/>
+<p><em>Or run: <code>ano7 checkin</code></em></p>
+</body></html>"#,
+        work_item_id, work_item_title, work_item_id, work_item_id, work_item_id
+    );
+
     let event = CalendarEvent {
         id: None,
         subject: subject.clone(),
         start: DateTimeTimeZone::from_utc(start, "UTC"),
         end: DateTimeTimeZone::from_utc(end, "UTC"),
-        body: None,
+        body: Some(crate::graph::models::ItemBody {
+            content_type: "html".to_string(),
+            content: checkin_body,
+        }),
         categories: vec!["Focus Block".to_string()],
-        extended_properties: None, // TODO: Add work_item_id
+        extended_properties: None, // TODO: Add work_item_id as extended property
     };
 
     if dry_run {
@@ -185,15 +207,32 @@ pub async fn calendar_schedule(
         println!("  Start: {}", event.start.date_time);
         println!("  End: {}", event.end.date_time);
         println!("  Duration: {} minutes", duration_mins);
+        println!("  Check-in URLs:");
+        println!("    - ao7://checkin?id={}&action=continue", work_item_id);
+        println!("    - ao7://checkin?id={}&action=blocked", work_item_id);
+        println!("    - ao7://checkin?id={}&action=stop", work_item_id);
         println!("✓ [DRY RUN] Would create focus block");
     } else {
         let created = client.create_event(event).await?;
+        let event_id = created.id.clone().unwrap_or_default();
+
+        // FR3.3: Store calendar mapping in state
+        let (lock_path, state_path) =
+            crate::platform::state_paths(config.state.state_dir_override.as_ref())?;
+        crate::state::with_state_lock(&lock_path, &state_path, |state| {
+            state.upsert_calendar_mapping(work_item_id, event_id.clone());
+            Ok(())
+        })?;
 
         println!("✓ Focus Block scheduled");
         println!("  Event ID: {}", created.id.as_deref().unwrap_or("N/A"));
         println!("  Subject: {}", created.subject);
         println!("  Start: {}", created.start.date_time);
         println!("  End: {}", created.end.date_time);
+        println!(
+            "  Mapping stored: Task {} -> Event {}",
+            work_item_id, event_id
+        );
     }
 
     Ok(())
