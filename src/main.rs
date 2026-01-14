@@ -81,6 +81,24 @@ enum Commands {
         #[arg(long, help = "Preview changes without applying")]
         dry_run: bool,
     },
+
+    /// Update work item fields (FR1.13)
+    ///
+    /// Update assigned-to, priority, or tags in a single operation.
+    /// Multiple fields can be updated simultaneously with a single API call.
+    Update {
+        #[arg(help = "Work Item ID")]
+        id: u32,
+        #[arg(long, help = "Assign to user (email or 'me')")]
+        assigned_to: Option<String>,
+        #[arg(long, help = "Set priority (1-4)")]
+        priority: Option<u32>,
+        #[arg(long, help = "Set tags (comma-separated)")]
+        tags: Option<String>,
+        #[arg(long, help = "Preview changes without applying")]
+        dry_run: bool,
+    },
+
     /// Export work items to Markdown (Phase 4)
     ///
     /// Exports one or more work items to a hierarchical Markdown format.
@@ -304,6 +322,22 @@ fn main() -> Result<()> {
             dry_run,
         } => {
             commands::devops::state(&config, *id, new_state.clone(), *dry_run)?;
+        }
+        Commands::Update {
+            id,
+            assigned_to,
+            priority,
+            tags,
+            dry_run,
+        } => {
+            commands::devops::update(
+                &config,
+                *id,
+                assigned_to.clone(),
+                *priority,
+                tags.clone(),
+                *dry_run,
+            )?;
         }
         Commands::Export {
             ids,

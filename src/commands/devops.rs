@@ -353,3 +353,92 @@ pub fn import(_config: &Config, _file: std::path::PathBuf, _dry_run: bool) -> Re
         "Import command temporarily disabled during Phase 4 refactor. Use 'task export' for now."
     )
 }
+
+/// FR1.13: Update work item fields (assigned-to, priority, tags)
+pub fn update(
+    config: &Config,
+    id: u32,
+    assigned_to: Option<String>,
+    priority: Option<u32>,
+    tags: Option<String>,
+    dry_run: bool,
+) -> Result<()> {
+    let pat = config
+        .devops
+        .pat
+        .as_deref()
+        .context("DevOps PAT not set. Run 'task config set devops.pat <PAT>'")?;
+    let mut client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
+    if let Some(url) = &config.devops.api_url {
+        client = client.with_base_url(url);
+    }
+
+    // Fetch current work item to get rev
+    let item = client.get_work_item(id)?;
+
+    // Build JSON Patch operations
+    let mut operations = Vec::new();
+
+    if let Some(ref user) = assigned_to {
+        operations.push(serde_json::json!({
+            "op": "add",
+            "path": "/fields/System.AssignedTo",
+            "value": user
+        }));
+    }
+
+    if let Some(p) = priority {
+        // Validate priority range
+        if p < 1 || p > 4 {
+            anyhow::bail!("Priority must be between 1 and 4 (inclusive). Got: {}", p);
+        }
+        operations.push(serde_json::json!({
+            "op": "add",
+            "path": "/fields/Microsoft.VSTS.Common.Priority",
+            "value": p
+        }));
+    }
+
+    if let Some(ref tags_input) = tags {
+        // Convert comma-separated to semicolon-separated (DevOps format)
+        let formatted_tags = tags_input
+            .split(',')
+            .map(|s| s.trim())
+            .collect::<Vec<_>>()
+            .join("; ");
+        operations.push(serde_json::json!({
+            "op": "add",
+            "path": "/fields/System.Tags",
+            "value": formatted_tags
+        }));
+    }
+
+    if operations.is_empty() {
+        println!("No fields to update. Specify --assigned-to, --priority, or --tags");
+        return Ok(());
+    }
+
+    if dry_run {
+        println!("[DRY-RUN] Would update Task {} with:", id);
+        println!("{}", serde_json::to_string_pretty(&operations)?);
+        return Ok(());
+    }
+
+    // Apply all operations in single PATCH
+    let patch_vec = operations.iter().map(|v| v.clone()).collect::<Vec<_>>();
+
+    client.update_work_item_with_rev(id, patch_vec, Some(item.rev))?;
+
+    println!("✓ Task {} updated successfully", id);
+    if let Some(user) = assigned_to {
+        println!("  - Assigned To: {}", user);
+    }
+    if let Some(p) = priority {
+        println!("  - Priority: {}", p);
+    }
+    if let Some(t) = tags {
+        println!("  - Tags: {}", t);
+    }
+
+    Ok(())
+}
