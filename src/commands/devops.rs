@@ -6,6 +6,8 @@ pub fn list(
     config: &Config,
     state: Option<String>,
     assigned_to: Option<String>,
+    search: Option<String>,
+    tags: Option<String>,
     limit: Option<u32>,
 ) -> Result<()> {
     let pat = config
@@ -13,7 +15,10 @@ pub fn list(
         .pat
         .as_deref()
         .context("DevOps PAT not set. Run 'task config set devops.pat <PAT>'")?;
-    let client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
+    let mut client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
+    if let Some(url) = &config.devops.api_url {
+        client = client.with_base_url(url);
+    }
 
     let mut conditions = vec![
         "[System.TeamProject] = @project".to_string(),
@@ -32,9 +37,133 @@ pub fn list(
         }
     }
 
+    // FR1.2: Search by title
+    if let Some(term) = search {
+        // Escape single quotes for SQL injection prevention
+        let escaped = term.replace("'", "''");
+        conditions.push(format!("[System.Title] CONTAINS '{}'", escaped));
+    }
+
+    // FR1.2: Filter by tags
+    if let Some(tag) = tags {
+        let escaped = tag.replace("'", "''");
+        conditions.push(format!("[System.Tags] CONTAINS '{}'", escaped));
+    }
+
+    // FR1.15: Default sort by priority then changed date
+    let order_clause = "ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.ChangedDate] DESC";
+
     let query = format!(
-        "SELECT [System.Id] FROM WorkItems WHERE {} ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.ChangedDate] DESC",
-        conditions.join(" AND ")
+        "SELECT [System.Id] FROM WorkItems WHERE {} {}",
+        conditions.join(" AND "),
+        order_clause
+    );
+
+    let wiql_resp = client.execute_wiql(&query)?;
+
+    let ids: Vec<u32> = wiql_resp
+        .work_items
+        .iter()
+        .take(limit.unwrap_or(50) as usize)
+        .map(|r| r.id)
+        .collect();
+
+    if ids.is_empty() {
+        println!("No work items found.");
+        return Ok(());
+    }
+
+    let items = client.get_work_items_batch(&ids)?;
+
+    println!(
+        "{:<8} {:<50} {:<15} {:<5} {:<10}",
+        "ID", "Title", "State", "Prio", "Type"
+    );
+    println!("{}", "-".repeat(90));
+
+    for item in items {
+        let id = item.id;
+        let title = item.get_title().unwrap_or("No Title");
+        let state = item.get_state().unwrap_or("Unknown");
+        let type_ = item.get_type().unwrap_or("Unknown");
+        let prio = item
+            .fields
+            .get("Microsoft.VSTS.Common.Priority")
+            .map(|v| v.to_string())
+            .unwrap_or(" ".to_string());
+
+        let title = if title.len() > 48 {
+            format!("{}...", &title[0..45])
+        } else {
+            title.to_string()
+        };
+
+        println!(
+            "{:<8} {:<50} {:<15} {:<5} {:<10}",
+            id, title, state, prio, type_
+        );
+    }
+
+    Ok(())
+}
+
+// Helper function for testing custom sort (will be used when we add --sort flag to CLI)
+#[allow(dead_code)]
+pub fn list_with_sort(
+    config: &Config,
+    state: Option<String>,
+    assigned_to: Option<String>,
+    search: Option<String>,
+    tags: Option<String>,
+    sort_by: &str,
+    limit: Option<u32>,
+) -> Result<()> {
+    let pat = config.devops.pat.as_deref().context("DevOps PAT not set")?;
+    let mut client = DevOpsClient::new(pat, &config.devops.organization, &config.devops.project);
+    if let Some(url) = &config.devops.api_url {
+        client = client.with_base_url(url);
+    }
+
+    let mut conditions = vec![
+        "[System.TeamProject] = @project".to_string(),
+        "[System.State] <> 'Removed'".to_string(),
+    ];
+
+    if let Some(s) = state {
+        conditions.push(format!("[System.State] = '{}'", s));
+    }
+
+    if let Some(user) = assigned_to {
+        if user == "me" {
+            conditions.push("[System.AssignedTo] = @me".to_string());
+        } else {
+            conditions.push(format!("[System.AssignedTo] = '{}'", user));
+        }
+    }
+
+    if let Some(term) = search {
+        let escaped = term.replace("'", "''");
+        conditions.push(format!("[System.Title] CONTAINS '{}'", escaped));
+    }
+
+    if let Some(tag) = tags {
+        let escaped = tag.replace("'", "''");
+        conditions.push(format!("[System.Tags] CONTAINS '{}'", escaped));
+    }
+
+    // FR1.15: Configurable sorting
+    let order_clause = match sort_by {
+        "priority" => "ORDER BY [Microsoft.VSTS.Common.Priority] ASC",
+        "changed" => "ORDER BY [System.ChangedDate] DESC",
+        "created" => "ORDER BY [System.CreatedDate] DESC",
+        "title" => "ORDER BY [System.Title] ASC",
+        _ => "ORDER BY [Microsoft.VSTS.Common.Priority] ASC, [System.ChangedDate] DESC",
+    };
+
+    let query = format!(
+        "SELECT [System.Id] FROM WorkItems WHERE {} {}",
+        conditions.join(" AND "),
+        order_clause
     );
 
     let wiql_resp = client.execute_wiql(&query)?;

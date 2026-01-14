@@ -58,6 +58,10 @@ enum Commands {
         state: Option<String>,
         #[arg(long, help = "Filter by assignee (email or 'me')")]
         assigned_to: Option<String>,
+        #[arg(long, help = "Search by title text")]
+        search: Option<String>,
+        #[arg(long, help = "Filter by tag")]
+        tags: Option<String>,
         #[arg(long, help = "Limit results", default_value = "50")]
         limit: u32,
     },
@@ -278,9 +282,18 @@ fn main() -> Result<()> {
         Commands::List {
             state,
             assigned_to,
+            search,
+            tags,
             limit,
         } => {
-            commands::devops::list(&config, state.clone(), assigned_to.clone(), Some(*limit))?;
+            commands::devops::list(
+                &config,
+                state.clone(),
+                assigned_to.clone(),
+                search.clone(),
+                tags.clone(),
+                Some(*limit),
+            )?;
         }
         Commands::Show { id } => {
             commands::devops::show(&config, *id)?;
