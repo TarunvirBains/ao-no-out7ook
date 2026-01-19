@@ -67,9 +67,13 @@ pub fn start(
         println!("[DRY-RUN] Would start timer for Task {}", id);
         None
     } else {
-        println!("Starting timer for Task {} - {}...", id, title);
+        if !matches!(format, OutputFormat::Json) {
+            println!("Starting timer for Task {} - {}...", id, title);
+        }
         let timer = pace_client.start_timer(id, None)?;
-        println!("✓ Timer started for Task {}", id);
+        if !matches!(format, OutputFormat::Json) {
+            println!("✓ Timer started for Task {}", id);
+        }
         Some(timer.id)
     };
 
@@ -152,7 +156,9 @@ pub fn start(
         }
 
         if let Some(current) = &state.current_task {
-            println!("Stopping previous task: {} - {}", current.id, current.title);
+            if !matches!(format, OutputFormat::Json) {
+                println!("Stopping previous task: {} - {}", current.id, current.title);
+            }
         }
 
         let now = Utc::now();
@@ -190,7 +196,9 @@ pub fn stop(config: &Config, dry_run: bool, format: OutputFormat) -> Result<()> 
                 println!("[DRY-RUN] Would stop timer for Task {}", current.id);
             } else if current.timer_id.is_some() {
                 // Stop 7Pace timer if active
-                println!("Stopping timer for Task {}...", current.id);
+                if !matches!(format, OutputFormat::Json) {
+                    println!("Stopping timer for Task {}...", current.id);
+                }
                 // Currently implementing stop using config might be complex in closure,
                 // for now we trust the CLI/User to manage this, or implement full stop logic later.
                 // The current implementation is just state maintenance essentially.

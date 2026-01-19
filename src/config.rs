@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use config::{Config as ConfigBuilder, File, FileFormat};
+use config::{Config as ConfigBuilder, Environment, File, FileFormat};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::path::PathBuf;
@@ -30,6 +30,13 @@ pub struct DevOpsConfig {
     pub api_url: Option<String>,
     /// Optional 7Pace API URL override for testing
     pub pace_api_url: Option<String>,
+    /// Whether to migrate/use system keyring for PAT (default: true)
+    #[serde(default = "default_use_keyring")]
+    pub use_keyring: bool,
+}
+
+fn default_use_keyring() -> bool {
+    true
 }
 
 fn default_skip_states() -> Vec<String> {
@@ -50,6 +57,7 @@ impl Default for DevOpsConfig {
             skip_states: default_skip_states(),
             api_url: None,
             pace_api_url: None,
+            use_keyring: true,
         }
     }
 }
@@ -172,12 +180,14 @@ impl FocusBlocksConfig {
 impl Config {
     /// Get DevOps PAT from keyring or config (with migration)
     pub fn get_devops_pat(&self) -> Result<String> {
-        // Try keyring first
-        if let Ok(pat) = crate::keyring::get_devops_pat() {
-            return Ok(pat);
+        // Try keyring first if enabled
+        if self.devops.use_keyring {
+            if let Ok(pat) = crate::keyring::get_devops_pat() {
+                return Ok(pat);
+            }
         }
 
-        // Fall back to config file (legacy)
+        // Fall back to config file (legacy or testing)
         if let Some(pat) = &self.devops.pat {
             return Ok(pat.clone());
         }
@@ -196,6 +206,10 @@ impl Config {
     pub fn migrate_credentials(&mut self) -> Result<bool> {
         let mut migrated = false;
 
+        if !self.devops.use_keyring {
+            return Ok(false);
+        }
+
         if let Some(pat) = &self.devops.pat {
             // Store in keyring
             crate::keyring::store_devops_pat(pat).context("Failed to store PAT in keyring")?;
@@ -212,6 +226,7 @@ impl Config {
 pub fn load_from_path<P: AsRef<Path>>(path: P) -> Result<Config> {
     let loader = ConfigBuilder::builder()
         .add_source(File::from(path.as_ref()).format(FileFormat::Toml))
+        .add_source(Environment::with_prefix("AO7").separator("__"))
         .build()
         .context("Failed to build config loader")?;
 
